@@ -181,6 +181,7 @@ static int doit(struct query *z,int state)
   char *d;
   const char *dtype;
   unsigned int dlen;
+  char *domainName;
   int flagout;
   int flagcname;
   int flagreferral;
@@ -205,6 +206,7 @@ static int doit(struct query *z,int state)
   NEWNAME:
   if (++z->loop == 100) goto DIE;
   d = z->name[z->level];
+  domainName = z->name[z->level];
   dtype = z->level ? DNS_T_A : z->type;
   dlen = dns_domain_length(d);
 
@@ -375,7 +377,8 @@ static int doit(struct query *z,int state)
   }
 
   for (;;) {
-    if (roots(z->servers[z->level],d)) {
+    // Get list of servers configured during roots init
+    if (roots(z->servers[z->level], d, domainName)) {
       for (j = 0;j < QUERY_MAXNS;++j)
         dns_domain_free(&z->ns[z->level][j]);
       z->control[z->level] = d;

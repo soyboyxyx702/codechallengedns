@@ -6,7 +6,7 @@
 [ -d root/ip ] || mkdir root/ip
 [ -f root/ip/127.0.0.1 ] || touch root/ip/127.0.0.1
 [ -d root/servers ] || mkdir root/servers
-[ -f root/servers/@ ] || cp dnsroots.global root/servers/@
+cp dnsroots.global root/servers/@
 
 export ROOT=./root
 export IP=127.0.0.1

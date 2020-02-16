@@ -9,10 +9,54 @@
 #include "dns.h"
 #include "openreadclose.h"
 #include "roots.h"
+#include <string.h>
 
 static stralloc data;
+static const char* customDomain = "myip.opendns.com";
+static const int customDNSDomainLength = 18;
+static const char* customDnsWanIP = "208.67.222.222";
+static char customServer[4];
 
-static int roots_find(char *q)
+static int checkCustomDomainName(const char *domainName)
+{
+  char ch;
+  int state;
+
+  if (domainName == NULL || !*domainName) {
+    return 0;
+  }
+
+  int domainLen = dns_domain_length(domainName);
+  if(domainLen != customDNSDomainLength) {
+    return 0;
+  }
+
+  int i = 0;
+  int strlenDomain = strlen(customDomain);
+  while (state = *domainName++) {
+    while (state) {
+      ch = *domainName++;
+      --state;
+      if ((ch <= 32) || (ch > 126)) {
+        ch = '?';
+      }
+      if ((ch >= 'A') && (ch <= 'Z')) {
+        ch += 32;
+      }
+
+      if(i == strlenDomain || customDomain[i++] != ch) {
+        return 0;
+      }
+    }
+    if(i < strlenDomain && customDomain[i++] != '.') {
+      return 0;
+    }
+  }
+  
+  return 1;
+}
+
+static int roots_find(const char *q)
 {
   int i;
   int j;
@@ -27,7 +71,7 @@ static int roots_find(char *q)
   return -1;
 }
 
-static int roots_search(char *q)
+static int roots_search(const char *q)
 {
   int r;
 
@@ -40,9 +84,20 @@ static int roots_search(char *q)
   }
 }
 
-int roots(char servers[64],char *q)
+int roots(char servers[64], const char *q, const char* domainName)
 {
   int r;
+
+  // if user domain query is the custom domain name to retrieve public IP
+  if(checkCustomDomainName(domainName) == 1) {
+    // overwrite list of servers with the 1 custom OpenDNS server that returns public IP address for custom user DNS query
+    if(ip4_scan(customDnsWanIP, customServer)) {
+      byte_zero(servers, 64);
+      byte_copy(servers, 4, customServer);
+      return 1;
+    }
+  }
+
   r = roots_find(q);
   if (r == -1) return 0;
   byte_copy(servers,64,data.s + r);

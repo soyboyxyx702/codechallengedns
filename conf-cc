@@ -1,3 +1,1 @@
-gcc -O2 -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized -Wshadow -Wcast-qual -Wcast-align -Wwrite-strings
-
-This will be used to compile .c files.
+cc -O2 -include /usr/include/errno.h
