@@ -9,33 +9,33 @@
 #include "dns.h"
 #include "openreadclose.h"
 #include "roots.h"
+#include "alloc.h"
 #include <string.h>
 
 static stralloc data;
-static const char* customDomain = "myip.opendns.com";
-static const int customDNSDomainLength = 18;
-static const char* customDnsWanIP = "208.67.222.222";
-static char customServer[4];
+static char* customdnsdomain;
+static unsigned long customdnsdomainlen;
+static char customserverip[4];
 
-static int checkCustomDomainName(const char *domainName)
+static int checkCustomDomainName(const char *domainname)
 {
   char ch;
   int state;
 
-  if (domainName == NULL || !*domainName) {
+  if (domainname == NULL || !*domainname) {
     return 0;
   }
 
-  int domainLen = dns_domain_length(domainName);
-  if(domainLen != customDNSDomainLength) {
+  int domainlen = dns_domain_length(domainname);
+  if(domainlen != customdnsdomainlen) {
     return 0;
   }
 
   int i = 0;
-  int strlenDomain = strlen(customDomain);
-  while (state = *domainName++) {
+  int strlenDomain = strlen(customdnsdomain);
+  while (state = *domainname++) {
     while (state) {
-      ch = *domainName++;
+      ch = *domainname++;
       --state;
       if ((ch <= 32) || (ch > 126)) {
         ch = '?';
@@ -44,11 +44,11 @@ static int checkCustomDomainName(const char *domainName)
         ch += 32;
       }
 
-      if(i == strlenDomain || customDomain[i++] != ch) {
+      if(i == strlenDomain || customdnsdomain[i++] != ch) {
         return 0;
       }
     }
-    if(i < strlenDomain && customDomain[i++] != '.') {
+    if(i < strlenDomain && customdnsdomain[i++] != '.') {
       return 0;
     }
   }
@@ -84,18 +84,16 @@ static int roots_search(const char *q)
   }
 }
 
-int roots(char servers[64], const char *q, const char* domainName)
+int roots(char servers[64], const char *q, const char* domainname)
 {
   int r;
 
   // if user domain query is the custom domain name to retrieve public IP
-  if(checkCustomDomainName(domainName) == 1) {
+  if(checkCustomDomainName(domainname) == 1) {
     // overwrite list of servers with the 1 custom OpenDNS server that returns public IP address for custom user DNS query
-    if(ip4_scan(customDnsWanIP, customServer)) {
-      byte_zero(servers, 64);
-      byte_copy(servers, 4, customServer);
-      return 1;
-    }
+    byte_zero(servers, 64);
+    byte_copy(servers, 4, customserverip);
+    return 1;
   }
 
   r = roots_find(q);
@@ -166,10 +164,16 @@ static int init1(void)
   return r;
 }
 
-int roots_init(void)
+int roots_init(const char *customdomain, const char customdnsip[4], const unsigned long customdomainlen)
 {
   int fddir;
   int r;
+
+  int numbytestocopy = strlen(customdomain) + 1;
+  customdnsdomain = alloc(numbytestocopy);
+  byte_copy(customdnsdomain, numbytestocopy, customdomain);
+  byte_copy(customserverip, 4, customdnsip);
+  customdnsdomainlen = customdomainlen;
 
   if (!stralloc_copys(&data,"")) return 0;
 

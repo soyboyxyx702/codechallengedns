@@ -457,7 +457,23 @@ int main()
   if (env_get("FORWARDONLY"))
     query_forwardonly();
 
-  if (!roots_init())
+  char *customdomain = NULL;
+  char customdnsserverip[4];
+  unsigned long customdomainlength;
+
+  customdomain = env_get("CUSTOMDOMAIN");
+  if (!customdomain)
+    strerr_die2x(111,FATAL,"$CUSTOMDOMAIN not set");
+  x = env_get("CUSTOMDOMAINLEN");
+  if (!x)
+    strerr_die2x(111,FATAL,"$CUSTOMDOMAINLEN not set");
+  scan_ulong(x,&customdomainlength);
+  x = env_get("CUSTOMDNS");
+  if (!x)
+    strerr_die2x(111,FATAL,"$CUSTOMDNS not set");
+  if (!ip4_scan(x,customdnsserverip))
+    strerr_die3x(111,FATAL,"unable to parse IP address ",x);
+  if (!roots_init(customdomain, customdnsserverip, customdomainlength))
     strerr_die2sys(111,FATAL,"unable to read servers: ");
 
   if (socket_listen(tcp53,20) == -1)

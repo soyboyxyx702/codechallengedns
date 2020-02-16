@@ -325,8 +325,8 @@ stralloc.h iopause.h taia.h tai.h uint64.h taia.h
 	./compile dns_txt.c
 
 dnscache: \
-load dnscache.o droproot.o okclient.o log.o cache.o query.o accesscontrol.o \
-response.o dd.o roots.o iopause.o prot.o dns.a env.a alloc.a buffer.a \
+load dnscache.o droproot.o okclient.o log.o cache.o query.o \
+response.o dd.o roots.o iopause.o prot.o accesscontrol.o dns.a env.a alloc.a buffer.a \
 libtai.a unix.a byte.a socket.lib
 	./load dnscache droproot.o okclient.o log.o cache.o \
 	query.o response.o dd.o roots.o iopause.o prot.o accesscontrol.o dns.a \
@@ -757,7 +757,7 @@ tai.h uint64.h taia.h byte.h uint16.h response.h uint32.h
 roots.o: \
 compile roots.c open.h error.h str.h byte.h error.h direntry.h ip4.h \
 dns.h stralloc.h gen_alloc.h iopause.h taia.h tai.h uint64.h taia.h \
-openreadclose.h stralloc.h roots.h
+openreadclose.h stralloc.h alloc.h roots.h
 	./compile roots.c
 
 rts: \

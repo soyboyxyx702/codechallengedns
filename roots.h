@@ -3,6 +3,6 @@
 
 extern int roots(char *, const char *, const char*);
 extern int roots_same(char *,char *);
-extern int roots_init(void);
+extern int roots_init(const char*, const char*, const unsigned long);
 
 #endif

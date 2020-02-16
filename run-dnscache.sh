@@ -12,6 +12,10 @@ export ROOT=./root
 export IP=127.0.0.1
 export IPSEND=0.0.0.0
 export CACHESIZE=1024576
+export CUSTOMDOMAIN=myip.opendns.com
+# domain length when encoded 4myip7opendns3com + null char
+export CUSTOMDOMAINLEN=18
+export CUSTOMDNS=208.67.222.222
 export GID=0
 
 # UID is read-only in bash, so we set it with env.
