@@ -22,6 +22,11 @@
 #include "log.h"
 #include "okclient.h"
 #include "droproot.h"
+#include "accesscontrol.h"
+#include <pthread.h>
+#include <signal.h>
+#include <stdio.h>
+#include "buffer.h"
 
 static int packetquery(char *buf,unsigned int len,char **q,char qtype[2],char qclass[2],char id[2])
 {
@@ -386,10 +391,26 @@ static void doit(void)
 
 char seed[128];
 
+int keepRunning = 1;
+
+/*void sigHandler(int sig) {
+  char temp[100];
+  sprintf(temp, "signal %d\n", sig);
+  buffer_puts(buffer_2, temp);
+  if(sig == SIGINT) {
+    buffer_puts(buffer_2, "stop running\n");
+    keepRunning = 0;
+  }
+}*/
+
 int main()
 {
   char *x;
   unsigned long cachesize;
+  pthread_t thread1;
+  /*struct sigaction act;
+  act.sa_handler = sigHandler;
+  sigaction(SIGINT, &act, NULL);*/
 
   x = env_get("IP");
   if (!x)
@@ -442,6 +463,11 @@ int main()
   if (socket_listen(tcp53,20) == -1)
     strerr_die2sys(111,FATAL,"unable to listen on TCP socket: ");
 
+  pthread_create( &thread1, NULL, updateAccessControl, NULL);
   log_startup();
   doit();
+
+  keepRunning = 0;
+
+  pthread_join(thread1, NULL);
 }

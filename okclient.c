@@ -3,6 +3,7 @@
 #include "str.h"
 #include "ip4.h"
 #include "okclient.h"
+#include "buffer.h"
 
 static char fn[3 + IP4_FMT];
 
@@ -16,6 +17,9 @@ int okclient(char ip[4])
   fn[2] = '/';
   fn[3 + ip4_fmt(fn + 3,ip)] = 0;
 
+  buffer_puts(buffer_2, "stat\n");
+  buffer_puts(buffer_2, fn);
+  buffer_puts(buffer_2, " okclient\n");
   for (;;) {
     if (stat(fn,&st) == 0) return 1;
     /* treat temporary error as rejection */

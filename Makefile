@@ -7,6 +7,10 @@ default: it
 clean:
 	rm *.o *.a
 
+accesscontrol.o: \
+compile accesscontrol.c accesscontrol.h dnscache.h
+	./compile accesscontrol.c
+
 alloc.a: \
 makelib alloc.o alloc_re.o getln.o getln2.o stralloc_cat.o \
 stralloc_catb.o stralloc_cats.o stralloc_copy.o stralloc_eady.o \
@@ -321,11 +325,11 @@ stralloc.h iopause.h taia.h tai.h uint64.h taia.h
 	./compile dns_txt.c
 
 dnscache: \
-load dnscache.o droproot.o okclient.o log.o cache.o query.o \
+load dnscache.o droproot.o okclient.o log.o cache.o query.o accesscontrol.o \
 response.o dd.o roots.o iopause.o prot.o dns.a env.a alloc.a buffer.a \
 libtai.a unix.a byte.a socket.lib
 	./load dnscache droproot.o okclient.o log.o cache.o \
-	query.o response.o dd.o roots.o iopause.o prot.o dns.a \
+	query.o response.o dd.o roots.o iopause.o prot.o accesscontrol.o dns.a \
 	env.a alloc.a buffer.a libtai.a unix.a byte.a  `cat \
 	socket.lib`
 
@@ -346,7 +350,8 @@ compile dnscache.c env.h exit.h scan.h strerr.h error.h ip4.h \
 uint16.h uint64.h socket.h uint16.h dns.h stralloc.h gen_alloc.h \
 iopause.h taia.h tai.h uint64.h taia.h taia.h byte.h roots.h fmt.h \
 iopause.h query.h dns.h uint32.h alloc.h response.h uint32.h cache.h \
-uint32.h uint64.h ndelay.h log.h uint64.h okclient.h droproot.h
+uint32.h uint64.h ndelay.h log.h uint64.h okclient.h droproot.h \
+accesscontrol.h dnscache.h
 	./compile dnscache.c
 
 dnsfilter: \
@@ -571,6 +576,7 @@ warn-auto.sh conf-ld
 	echo 'main="$$1"; shift'; \
 	echo exec "`head -1 conf-ld`" \
 	'-o "$$main" "$$main".o $${1+"$$@"}' \
+	'-lpthread' \
 	) > load
 	chmod 755 load
 

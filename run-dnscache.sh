@@ -4,7 +4,7 @@
 
 [ -d root ] || mkdir root
 [ -d root/ip ] || mkdir root/ip
-[ -f root/ip/127.0.0.1 ] || touch root/ip/127.0.0.1
+#[ -f root/ip/127.0.0.1 ] || touch root/ip/127.0.0.1
 [ -d root/servers ] || mkdir root/servers
 cp dnsroots.global root/servers/@
 
