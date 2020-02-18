@@ -24,8 +24,7 @@ struct Hashbucket {
 };
 
 static time_t lastModificationTime = 0;
-// static char* accesscontrolpath = NULL;
-static char* accesscontrolpath = "ip/accesscontrol.global";
+static char* accesscontrolpath = NULL;
 static struct Hashbucket h[MAX_BUCKETS];
 static struct Hashbucket hauxillary[MAX_BUCKETS];
 static pthread_mutex_t hashmutex[MAX_BUCKETS];
@@ -159,8 +158,7 @@ static void addIPtoauxillarybucket(const char* ip) {
  * Invoked whenever the access control list has been updated
  * Read from access control list and update which IPs are allowed
  */
-//static void getUpdatedAccessControlList() {
-void getUpdatedAccessControlList() {
+static void getUpdatedAccessControlList() {
   FILE* fp = fopen("testing", "a");
   if (fp != NULL) {
     fprintf(fp, "reading access control %ld\n",  lastModificationTime);
@@ -192,8 +190,7 @@ void getUpdatedAccessControlList() {
 /*
  * Initialize auxillary and main hash tables buckets to be empty
  */
-//static void initializehashbuckets() {
-void initializehashbuckets() {
+static void initializehashbuckets() {
   int i;
   for(int i = 0; i < MAX_BUCKETS; i++) {
     h[i].begin = NULL;
@@ -207,8 +204,7 @@ void initializehashbuckets() {
  * Intiailize all mutexes to control concurrent access to hash buckets
  * Return 1 if initialization succeeds, -1 if it fails
  */
-//static int intializemutexes() {
-int intializemutexes() {
+static int intializemutexes() {
   for(int i = 0; i < MAX_BUCKETS; i++) {
     if(pthread_mutex_init(&hashmutex[i], NULL) != 0) {
       return -1;
