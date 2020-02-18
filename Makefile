@@ -8,7 +8,7 @@ clean:
 	rm *.o *.a
 
 accesscontrol.o: \
-compile accesscontrol.c accesscontrol.h dnscache.h
+compile accesscontrol.c accesscontrol.h alloc.h byte.h dnscache.h
 	./compile accesscontrol.c
 
 alloc.a: \

@@ -25,8 +25,6 @@
 #include "accesscontrol.h"
 #include <pthread.h>
 #include <signal.h>
-#include <stdio.h>
-#include "buffer.h"
 
 static int packetquery(char *buf,unsigned int len,char **q,char qtype[2],char qclass[2],char id[2])
 {
@@ -314,6 +312,7 @@ iopause_fd io[3 + MAXUDP + MAXTCP];
 iopause_fd *udp53io;
 iopause_fd *tcp53io;
 
+int keepRunning = 1;
 static void doit(void)
 {
   int j;
@@ -322,7 +321,7 @@ static void doit(void)
   int iolen;
   int r;
 
-  for (;;) {
+  for (; keepRunning; ) {
     taia_now(&stamp);
     taia_uint(&deadline,120);
     taia_add(&deadline,&deadline,&stamp);
@@ -391,17 +390,11 @@ static void doit(void)
 
 char seed[128];
 
-int keepRunning = 1;
-
-/*void sigHandler(int sig) {
-  char temp[100];
-  sprintf(temp, "signal %d\n", sig);
-  buffer_puts(buffer_2, temp);
+void sigHandler(int sig) {
   if(sig == SIGINT) {
-    buffer_puts(buffer_2, "stop running\n");
     keepRunning = 0;
   }
-}*/
+}
 
 int main()
 {
@@ -457,6 +450,9 @@ int main()
   if (env_get("FORWARDONLY"))
     query_forwardonly();
 
+  if (socket_listen(tcp53,20) == -1)
+    strerr_die2sys(111,FATAL,"unable to listen on TCP socket: ");
+
   char *customdomain = NULL;
   char customdnsserverip[4];
   unsigned long customdomainlength;
@@ -476,14 +472,13 @@ int main()
   if (!roots_init(customdomain, customdnsserverip, customdomainlength))
     strerr_die2sys(111,FATAL,"unable to read servers: ");
 
-  if (socket_listen(tcp53,20) == -1)
-    strerr_die2sys(111,FATAL,"unable to listen on TCP socket: ");
+  char* accesscontrolpath = env_get("ACCESSCONTROL");
+  if (!accesscontrolpath)
+    strerr_die2x(111,FATAL,"$ACCESSCONTROL not set");
+  pthread_create( &thread1, NULL, updateAccessControl, accesscontrolpath);
 
-  pthread_create( &thread1, NULL, updateAccessControl, NULL);
   log_startup();
   doit();
-
-  keepRunning = 0;
 
   pthread_join(thread1, NULL);
 }
