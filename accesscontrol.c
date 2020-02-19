@@ -25,6 +25,7 @@ struct Hashbucket {
 
 static time_t lastModificationTime = 0;
 static char* accesscontrolpath = NULL;
+static int alreadyinitialized = 0;
 static struct Hashbucket h[MAX_BUCKETS];
 static struct Hashbucket hauxillary[MAX_BUCKETS];
 static pthread_mutex_t hashmutex[MAX_BUCKETS];
@@ -257,14 +258,21 @@ void* updateAccessControl(void *param) {
     return NULL;
   }
 
-  initializehashbuckets();
+  // Just a safety check, allow access control module to be initialized only once
+  if(alreadyinitialized) {
+    return NULL;
+  }
+
   if(intializemutexes() != 1) {
     return NULL;
   }
+  initializehashbuckets();
 
   int len = strlen((char*)param) + 1;
   accesscontrolpath = alloc(strlen((char*)param) + 1);
   byte_copy(accesscontrolpath, len, (char *) param);
+
+  alreadyinitialized = 1;
 
   while(keepRunning == 1) {
     shortSleep(2);
