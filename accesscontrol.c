@@ -13,14 +13,14 @@
 #include "error.h"
 
 #define MAX_BUCKETS 10000
-struct IPNode {
+struct IPnode {
   char *ip;
-  struct IPNode* next;
+  struct IPnode* next;
 };
 
 struct Hashbucket {
-  struct IPNode* begin;
-  struct IPNode* end;
+  struct IPnode* begin;
+  struct IPnode* end;
 };
 
 static time_t lastModificationTime = 0;
@@ -93,12 +93,20 @@ static unsigned long hashcode(const char* ip) {
 /*
  * create a new node for the IP address to be stored into the hash bucket
  */
-static struct IPNode* newNode(const char* ip) {
-  struct IPNode* ipnode = (struct IPNode*) malloc(sizeof(struct IPNode));
-  ipnode->next = NULL;
-  int iplen = strlen(ip) + 1;
-  ipnode->ip = (char *) alloc(iplen);
-  byte_copy(ipnode->ip, iplen, ip);
+static struct IPnode* newnode(const char* ip) {
+  struct IPnode* ipnode = (struct IPnode*) malloc(sizeof(struct IPnode));
+  if(ipnode) {
+    ipnode->next = NULL;
+    int iplen = strlen(ip) + 1;
+    ipnode->ip = (char *) alloc(iplen);
+    if(ipnode->ip) {
+      byte_copy(ipnode->ip, iplen, ip);
+    }
+    else {
+      free(ipnode);
+      ipnode = NULL;
+    }
+  }
 
   return ipnode;
 }
@@ -113,9 +121,9 @@ static void moveEntriesFromAuxillaryToMainHashbucket() {
     pthread_mutex_lock(&hashmutex[bucketnum]);
 
     // delete entries for current bucket
-    struct IPNode* curr = h[bucketnum].begin;
+    struct IPnode* curr = h[bucketnum].begin;
     while(curr) {
-      struct IPNode* next = curr->next;
+      struct IPnode* next = curr->next;
       alloc_free(curr->ip);
       free(curr);
       curr = next;
@@ -144,7 +152,10 @@ static void addIPtoauxillarybucket(const char* ip) {
   unsigned long hashval = hashcode(ip);
   int bucketnum = hashval % MAX_BUCKETS;
 
-  struct IPNode* ipnode = newNode(ip);
+  struct IPnode* ipnode = newnode(ip);
+  if(!ipnode) {
+    return;
+  }
 
   if(hauxillary[bucketnum].begin == NULL) {
     hauxillary[bucketnum].begin = ipnode;
@@ -160,12 +171,6 @@ static void addIPtoauxillarybucket(const char* ip) {
  * Read from access control list and update which IPs are allowed
  */
 static void getUpdatedAccessControlList() {
-  FILE* fp = fopen("testing", "a");
-  if (fp != NULL) {
-    fprintf(fp, "reading access control %ld\n",  lastModificationTime);
-    fclose(fp);
-  }
-
   FILE* fptr = fopen(accesscontrolpath, "r");
   if (fptr == NULL) {
     return;
@@ -234,7 +239,7 @@ int allowaccesstoip(const char* ip) {
   pthread_mutex_lock(&hashmutex[bucketnum]);
 
   // Search within the hashbucket if the IP exists
-  struct IPNode* curr = h[bucketnum].begin;
+  struct IPnode* curr = h[bucketnum].begin;
   while(curr) {
     if(strcmp(curr->ip,ip) == 0) {
       found = 1;
