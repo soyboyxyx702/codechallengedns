@@ -3,6 +3,9 @@
 #include "cache.h"
 #include "str.h"
 
+/*
+ * ./cachetest www.google.com:172.217.3.164 www.google.com www.google.com:172.217.3.164 www.google.com
+ */
 int main(int argc,char **argv)
 {
   int i;
@@ -18,7 +21,7 @@ int main(int argc,char **argv)
   while (x = *argv++) {
     i = str_chr(x,':');
     if (x[i])
-      cache_set(x,i,x + i + 1,str_len(x) - i - 1,86400);
+      cache_set(x, i, x + i + 1, str_len(x) - i - 1, 86400);
     else {
       y = cache_get(x,i,&u,&ttl);
       if (y)
