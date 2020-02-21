@@ -4,7 +4,6 @@
 #include "exit.h"
 #include "tai.h"
 #include "cache.h"
-#include "buffer.h"
 #include <stdio.h>
 
 uint64 cache_motion = 0;
@@ -15,6 +14,7 @@ static uint32 hsize;
 static uint32 writer;
 static uint32 oldest;
 static uint32 unused;
+static uint32 notfound;
 
 /*
 100 <= size <= 1000000000.
@@ -79,8 +79,7 @@ static unsigned int hash(const char *key,unsigned int keylen)
   return result;
 }
 
-char *cache_get(const char *key,unsigned int keylen,unsigned int *datalen,uint32 *ttl)
-{
+static uint32 cache_find(const char *key,unsigned int keylen) {
   struct tai expire;
   struct tai now;
   uint32 pos;
@@ -90,57 +89,41 @@ char *cache_get(const char *key,unsigned int keylen,unsigned int *datalen,uint32
   unsigned int loop;
   double d;
 
-  if (!x) return 0;
-  if (keylen > MAXKEYLEN) return 0;
 
-  buffer_puts(buffer_2, "cacheget key  ");
-  buffer_put(buffer_2, key, keylen);
-  char temp[1024];
-  sprintf(temp, "   cacheget keylen %d\n", keylen);
-  buffer_puts(buffer_2, temp);
+  if (!x || keylen > MAXKEYLEN) {
+    return notfound;
+  }
 
   prevpos = hash(key,keylen);
   pos = get4(prevpos);
-  sprintf(temp, "cacheget prevpos (keyhash) %d pos %d\n", prevpos, pos);
-  buffer_puts(buffer_2, temp);
   loop = 0;
 
   /*
    * 4-byte link; 4-byte keylen; 4-byte datalen; 8-byte expire time; key; data.
    */
   while (pos) {
-    sprintf(temp, "cacheget pos %d\n", pos);
-    buffer_puts(buffer_2, temp);
-    sprintf(temp, "cacheget pos  + 4 (keylen)   %d\n", get4(pos + 4));
-    buffer_puts(buffer_2, temp);
-
     // Get key len and proceed only if keys are of the same length
     if (get4(pos + 4) == keylen) {
       // Boundary check before reading the key
       if (pos + 20 + keylen > size) cache_impossible();
-      // Found the key at that position
+
       if (byte_equal(key, keylen, x + pos + 20)) {
+        // Found the key at that position
+
+        // Boundary check for data
+        u = get4(pos + 8);
+        if (u > size - pos - 20 - keylen) cache_impossible();
+
         tai_unpack(x + pos + 12, &expire);
         tai_now(&now);
-        
-        sprintf(temp, "expires: %ld now: %ld\n", expire.x, now.x);
-        buffer_puts(buffer_2, temp);
 
         // key has already expired
-        if (tai_less(&expire,&now)) return 0;
+        if (tai_less(&expire,&now)) {
+          return notfound;
+        }
 
-        tai_sub(&expire,&expire,&now);
-        d = tai_approx(&expire);
-        if (d > 604800) d = 604800;
-        *ttl = d;
-
-        // Get datalen
-        u = get4(pos + 8);
-        // Boundary check before reading the data
-        if (u > size - pos - 20 - keylen) cache_impossible();
-        *datalen = u;
-
-        return x + pos + 20 + keylen;
+        // return position of the entry for the key
+        return pos;
       }
     }
 
@@ -151,10 +134,68 @@ char *cache_get(const char *key,unsigned int keylen,unsigned int *datalen,uint32
     nextpos = prevpos ^ get4(pos);
     prevpos = pos;
     pos = nextpos;
-    if (++loop > 100) return 0; /* to protect against hash flooding */
+    if (++loop > 100) {
+      /* to protect against hash flooding */
+      return notfound;
+    }
   }
 
-  return 0;
+  return notfound;
+}
+
+void cache_delete(const char *key, unsigned int keylen) {
+  struct tai diffpast;
+  struct tai now;
+  struct tai past;
+  uint32 pos;
+  double d;
+
+  pos = cache_find(key, keylen);
+  if(pos == notfound) {
+    return;
+  }
+
+  /*
+   * Expire the key by setting its expiry time in the past
+   */
+  tai_now(&now);
+  tai_uint(&diffpast,10);
+  tai_sub(&past, &now, &diffpast);
+
+  tai_pack(x + pos + 12, &past);
+}
+
+char *cache_get(const char *key, unsigned int keylen, unsigned int *datalen, uint32 *ttl)
+{
+  struct tai expire;
+  struct tai now;
+  uint32 pos;
+  double d;
+
+  pos = cache_find(key, keylen);
+  if(pos == notfound) {
+    return 0;
+  }
+
+  /*
+   * 4-byte link; 4-byte keylen; 4-byte datalen; 8-byte expire time; key; data.
+   */
+  tai_unpack(x + pos + 12, &expire);
+  tai_now(&now);
+        
+  tai_sub(&expire, &expire, &now);
+  d = tai_approx(&expire);
+
+  if (d > 604800) {
+    // Cap TTL
+    d = 604800;
+  }
+  *ttl = d;
+
+  // Get datalen
+  *datalen = get4(pos + 8);
+
+  return x + pos + 20 + keylen;
 }
 
 void cache_set(const char *key,unsigned int keylen,const char *data,unsigned int datalen,uint32 ttl)
@@ -165,9 +206,6 @@ void cache_set(const char *key,unsigned int keylen,const char *data,unsigned int
   unsigned int keyhash;
   uint32 pos;
 
-  char temp[1024];
-  sprintf(temp, "\n\nCACHESET keylen %d datalen %d ttl %d\n", keylen, datalen, ttl);
-  buffer_puts(buffer_2, temp);
   // Parameter validation
   if (!x) return;
   if (keylen > MAXKEYLEN) return;
@@ -186,66 +224,37 @@ void cache_set(const char *key,unsigned int keylen,const char *data,unsigned int
    * If oldest == unused then unused == size.
    */
   // Keep moving oldest until it's outside the boundary of the latest entry to be inserted
-  sprintf(temp, "cacheset writer %d oldest %d\n", writer, oldest);
-  buffer_puts(buffer_2, temp);
   while (writer + entrylen > oldest) {
     if (oldest == unused) {
       if (writer <= hsize) return;
       unused = writer;
       oldest = hsize;
       writer = hsize;
-      sprintf(temp, "cacheset reset to oldest %d writer %d unused %d\n", oldest, writer, unused);
-      buffer_puts(buffer_2, temp);
     }
-
-    // Overwrite x + pos with XOR(existing val of 4 bytes at pos, oldest)
-    sprintf(temp, "cacheset oldest contains %d to be assigned to pos\n", get4(oldest));
-    buffer_puts(buffer_2, temp);
 
     pos = get4(oldest);
 
-    sprintf(temp, "cacheset pos contains %d to be overwritten with get4(pos) ^ oldest: %d\n", get4(pos), get4(pos) ^ oldest);
-    buffer_puts(buffer_2, temp);
     set4(pos, get4(pos) ^ oldest);
-    sprintf(temp, "cacheset pos overwritten with %d\n", get4(pos));
-    buffer_puts(buffer_2, temp);
  
     // Move oldest by an entry 
     oldest += get4(oldest + 4) + get4(oldest + 8) + 20;
-    sprintf(temp, "cacheset oldest moved to %d\n", oldest);
-    buffer_puts(buffer_2, temp);
     if (oldest > unused) cache_impossible();
     if (oldest == unused) {
       unused = size;
       oldest = size;
-      sprintf(temp, "cacheset reset oldest & unused to %d\n", size);
-      buffer_puts(buffer_2, temp);
     }
   }
 
   keyhash = hash(key, keylen);
-
-  sprintf(temp, "cacheset keyhash: %d\n", keyhash);
-  buffer_puts(buffer_2, temp);
 
   tai_now(&now);
   tai_uint(&expire,ttl);
   tai_add(&expire,&expire,&now);
 
   pos = get4(keyhash);
-  sprintf(temp, "cacheset 4 bytes at keyhash to be assigned to pos: %d\n", pos);
-  buffer_puts(buffer_2, temp);
   if (pos) {
-    sprintf(temp, "cacheset 4 bytes at x(pos) are : %d  writer %d\n", get4(pos), writer);
-    buffer_puts(buffer_2, temp);
-
     set4(pos, get4(pos) ^ keyhash ^ writer);
-
-    sprintf(temp, "cacheset 4 bytes at x(pos) set to get4(pos) ^ keyhash ^ writer: %d\n", get4(pos));
-    buffer_puts(buffer_2, temp);
   }
-  sprintf(temp, "cacheset writer %d, 4 bytes at writer %d, to be overwritten with  (pos ^ keyhash) : %d\n", writer, get4(writer), pos ^ keyhash);
-  buffer_puts(buffer_2, temp);
   set4(writer, pos ^ keyhash);
   set4(writer + 4,keylen);
   set4(writer + 8,datalen);
@@ -254,8 +263,6 @@ void cache_set(const char *key,unsigned int keylen,const char *data,unsigned int
   byte_copy(x + writer + 20 + keylen, datalen, data);
 
   // value at pos keyhash will point to writer i.e. whether key has been written
-  sprintf(temp, "cacheset keyhash %d, 4 bytes at keyhash %d, to be overwritten with writer: %d\n", keyhash, get4(keyhash), writer);
-  buffer_puts(buffer_2, temp);
   set4(keyhash, writer);
   writer += entrylen;
   cache_motion += entrylen;
@@ -271,6 +278,8 @@ int cache_init(unsigned int cachesize)
   if (cachesize > 1000000000) cachesize = 1000000000;
   if (cachesize < 100) cachesize = 100;
   size = cachesize;
+  // an out of bound index for hash array indicating a key could not be located
+  notfound = size + 1;
 
   hsize = 4;
   while (hsize <= (size >> 5)) hsize <<= 1;
@@ -278,10 +287,6 @@ int cache_init(unsigned int cachesize)
   x = alloc(size);
   if (!x) return 0;
   byte_zero(x,size);
-
-  char temp[1024];
-  sprintf(temp, "hsize %d size %d  size/32 %d\n", hsize, size, (size >> 5)); 
-  buffer_puts(buffer_2, temp);
 
   writer = hsize;
   oldest = size;
