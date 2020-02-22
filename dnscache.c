@@ -399,11 +399,11 @@ void sigHandler(int sig) {
 int main()
 {
   char *x;
-  unsigned long cachesize;
+  unsigned long cachesize = 0L;
   pthread_t thread1;
-  /*struct sigaction act;
+  struct sigaction act;
   act.sa_handler = sigHandler;
-  sigaction(SIGINT, &act, NULL);*/
+  sigaction(SIGINT, &act, 0);
 
   x = env_get("IP");
   if (!x)
@@ -438,11 +438,27 @@ int main()
   if (!ip4_scan(x,myipoutgoing))
     strerr_die3x(111,FATAL,"unable to parse IP address ",x);
 
-  x = env_get("CACHESIZE");
+  unsigned int distributedcache;
+  char *cacheserverspath = 0;
+  x = env_get("DISTRIBUTEDCACHE");
   if (!x)
-    strerr_die2x(111,FATAL,"$CACHESIZE not set");
-  scan_ulong(x,&cachesize);
-  if (!cache_init(cachesize))
+    strerr_die2x(111,FATAL,"$DISTRIBUTEDCACHE not set");
+  scan_uint(x,&distributedcache);
+  if(distributedcache != 0 && distributedcache != 1) {
+    strerr_die3x(111,FATAL,"$DISTRIBUTEDCACHE not set to the correct value ", x);
+  }
+  if(!distributedcache) {
+    x = env_get("CACHESIZE");
+    if (!x)
+      strerr_die2x(111,FATAL,"$CACHESIZE not set");
+    scan_ulong(x,&cachesize);
+  }
+  else {
+    cacheserverspath = env_get("DISTRIBUTEDCACHESERVERSFILE");
+    if (!cacheserverspath)
+      strerr_die2x(111,FATAL,"$DISTRIBUTEDCACHESERVERSFILE not set");
+  }
+  if (!cache_init(distributedcache, cachesize, cacheserverspath))
     strerr_die3x(111,FATAL,"not enough memory for cache of size ",x);
 
   if (env_get("HIDETTL"))
@@ -453,17 +469,17 @@ int main()
   if (socket_listen(tcp53,20) == -1)
     strerr_die2sys(111,FATAL,"unable to listen on TCP socket: ");
 
-  char *customdomain = NULL;
+  char *customdomain = 0;
   char customdnsserverip[4];
-  unsigned long customdomainlength;
+  unsigned int customdomainlength;
 
   customdomain = env_get("CUSTOMDOMAIN");
   if (!customdomain)
     strerr_die2x(111,FATAL,"$CUSTOMDOMAIN not set");
-  x = env_get("CUSTOMDOMAINLEN");
+  x = env_get("CUSTOMDNSDOMAINLEN");
   if (!x)
-    strerr_die2x(111,FATAL,"$CUSTOMDOMAINLEN not set");
-  scan_ulong(x,&customdomainlength);
+    strerr_die2x(111,FATAL,"$CUSTOMDNSDOMAINLEN not set");
+  scan_uint(x,&customdomainlength);
   x = env_get("CUSTOMDNS");
   if (!x)
     strerr_die2x(111,FATAL,"$CUSTOMDNS not set");
@@ -478,10 +494,10 @@ int main()
   if(initializeaccesscontrol(x) != 1) {
     strerr_die2sys(111,FATAL,"Unable to initialize accesscontrol");
   }
-  pthread_create( &thread1, NULL, updateAccessControl, NULL);
+  pthread_create( &thread1, 0, updateAccessControl, 0);
 
   log_startup();
   doit();
 
-  pthread_join(thread1, NULL);
+  pthread_join(thread1, 0);
 }

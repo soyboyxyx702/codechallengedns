@@ -24,7 +24,7 @@ struct Hashbucket {
 };
 
 static time_t lastModificationTime = 0;
-static char* accesscontrolpath = NULL;
+static char* accesscontrolpath = 0;
 static int alreadyinitialized = 0;
 static struct Hashbucket h[MAX_BUCKETS];
 static struct Hashbucket hauxillary[MAX_BUCKETS];
@@ -50,7 +50,7 @@ static void shortSleep(int sec) {
   struct timeval tv;
   tv.tv_sec = sec;
   tv.tv_usec = 0;
-  select(0, NULL, NULL, NULL, &tv);
+  select(0, 0, 0, 0, &tv);
 }
 
 /*
@@ -96,7 +96,7 @@ static unsigned long hashcode(const char* ip) {
 static struct IPnode* newnode(const char* ip) {
   struct IPnode* ipnode = (struct IPnode*) malloc(sizeof(struct IPnode));
   if(ipnode) {
-    ipnode->next = NULL;
+    ipnode->next = 0;
     int iplen = str_len(ip) + 1;
     ipnode->ip = (char *) alloc(iplen);
     if(ipnode->ip) {
@@ -104,7 +104,7 @@ static struct IPnode* newnode(const char* ip) {
     }
     else {
       free(ipnode);
-      ipnode = NULL;
+      ipnode = 0;
     }
   }
 
@@ -137,8 +137,8 @@ static void moveEntriesFromAuxillaryToMainHashbucket() {
     pthread_mutex_unlock(&hashmutex[bucketnum]);
 
     // clear out auxillary hash bucket, need not be in critical region
-    hauxillary[bucketnum].begin = NULL;
-    hauxillary[bucketnum].end = NULL;
+    hauxillary[bucketnum].begin = 0;
+    hauxillary[bucketnum].end = 0;
   }
 }
 
@@ -157,7 +157,7 @@ static void addIPtoauxillarybucket(const char* ip) {
     return;
   }
 
-  if(hauxillary[bucketnum].begin == NULL) {
+  if(!hauxillary[bucketnum].begin) {
     hauxillary[bucketnum].begin = ipnode;
   }
   else {
@@ -172,7 +172,7 @@ static void addIPtoauxillarybucket(const char* ip) {
  */
 static void getUpdatedAccessControlList() {
   FILE* fptr = fopen(accesscontrolpath, "r");
-  if (fptr == NULL) {
+  if (!fptr) {
     return;
   }
 
@@ -199,10 +199,10 @@ static void getUpdatedAccessControlList() {
 static void initializehashbuckets() {
   int i;
   for(int i = 0; i < MAX_BUCKETS; i++) {
-    h[i].begin = NULL;
-    h[i].end = NULL;
-    hauxillary[i].begin = NULL;
-    hauxillary[i].end = NULL;
+    h[i].begin = 0;
+    h[i].end = 0;
+    hauxillary[i].begin = 0;
+    hauxillary[i].end = 0;
   }
 }
 
@@ -212,7 +212,7 @@ static void initializehashbuckets() {
  */
 static int intializemutexes() {
   for(int i = 0; i < MAX_BUCKETS; i++) {
-    if(pthread_mutex_init(&hashmutex[i], NULL) != 0) {
+    if(pthread_mutex_init(&hashmutex[i], 0) != 0) {
       return -1;
     }
   }
@@ -260,7 +260,7 @@ int allowaccesstoip(const char* ip) {
  */
 void* updateAccessControl(void *dummyparam) {
   if(!alreadyinitialized) {
-    return NULL;
+    return 0;
   }
   while(keepRunning == 1) {
     shortSleep(2);
@@ -269,7 +269,7 @@ void* updateAccessControl(void *dummyparam) {
     }
   }
 
-  return NULL;
+  return 0;
 }
 
 /*

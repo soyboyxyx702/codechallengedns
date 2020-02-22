@@ -16,6 +16,8 @@ static uint32 oldest;
 static uint32 unused;
 static uint32 notfound;
 
+static uint32 usedistributedcache;
+
 /*
 100 <= size <= 1000000000.
 4 <= hsize <= size/16.
@@ -144,6 +146,10 @@ static uint32 cache_find(const char *key,unsigned int keylen) {
 }
 
 void cache_delete(const char *key, unsigned int keylen) {
+  if(usedistributedcache) {
+    return;
+  }
+
   struct tai diffpast;
   struct tai now;
   struct tai past;
@@ -167,6 +173,9 @@ void cache_delete(const char *key, unsigned int keylen) {
 
 char *cache_get(const char *key, unsigned int keylen, unsigned int *datalen, uint32 *ttl)
 {
+  if(usedistributedcache) {
+  }
+
   struct tai expire;
   struct tai now;
   uint32 pos;
@@ -200,6 +209,9 @@ char *cache_get(const char *key, unsigned int keylen, unsigned int *datalen, uin
 
 void cache_set(const char *key,unsigned int keylen,const char *data,unsigned int datalen,uint32 ttl)
 {
+  if(usedistributedcache) {
+  }
+
   struct tai now;
   struct tai expire;
   unsigned int entrylen;
@@ -268,8 +280,17 @@ void cache_set(const char *key,unsigned int keylen,const char *data,unsigned int
   cache_motion += entrylen;
 }
 
-int cache_init(unsigned int cachesize)
+int cache_init(unsigned int distributedcache, unsigned int cachesize, const char* cacheserversfile)
 {
+  usedistributedcache = distributedcache;
+  if(usedistributedcache) {
+    if(!cacheserversfile) {
+      return 0;
+    }
+
+    return 1;
+  }
+
   if (x) {
     alloc_free(x);
     x = 0;

@@ -22,7 +22,7 @@ static int checkCustomDomainName(const char *domainname)
   char ch;
   int state;
 
-  if (domainname == NULL || !*domainname) {
+  if (!domainname || !*domainname) {
     return 0;
   }
 

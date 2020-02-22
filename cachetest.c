@@ -14,7 +14,7 @@ int main(int argc,char **argv)
   unsigned int u;
   uint32 ttl;
 
-  if (!cache_init(200)) _exit(111);
+  if (!cache_init(0, 200, 0)) _exit(111);
 
   if (*argv) ++argv;
 
