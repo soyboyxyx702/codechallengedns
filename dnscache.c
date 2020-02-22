@@ -1,3 +1,6 @@
+#include <pthread.h>
+#include <signal.h>
+#include "accesscontrol.h"
 #include <unistd.h>
 #include "env.h"
 #include "exit.h"
@@ -22,9 +25,6 @@
 #include "log.h"
 #include "okclient.h"
 #include "droproot.h"
-#include "accesscontrol.h"
-#include <pthread.h>
-#include <signal.h>
 
 static int packetquery(char *buf,unsigned int len,char **q,char qtype[2],char qclass[2],char id[2])
 {
@@ -472,10 +472,13 @@ int main()
   if (!roots_init(customdomain, customdnsserverip, customdomainlength))
     strerr_die2sys(111,FATAL,"unable to read servers: ");
 
-  char* accesscontrolpath = env_get("ACCESSCONTROL");
-  if (!accesscontrolpath)
+  x = env_get("ACCESSCONTROL");
+  if (!x)
     strerr_die2x(111,FATAL,"$ACCESSCONTROL not set");
-  pthread_create( &thread1, NULL, updateAccessControl, accesscontrolpath);
+  if(initializeaccesscontrol(x) != 1) {
+    strerr_die2sys(111,FATAL,"Unable to initialize accesscontrol");
+  }
+  pthread_create( &thread1, NULL, updateAccessControl, NULL);
 
   log_startup();
   doit();

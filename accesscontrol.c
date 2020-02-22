@@ -1,7 +1,6 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/select.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -11,6 +10,7 @@
 #include "byte.h"
 #include "dnscache.h"
 #include "error.h"
+#include "str.h"
 
 #define MAX_BUCKETS 10000
 struct IPnode {
@@ -75,7 +75,7 @@ static int probefile() {
  * return hash value of a string (IP) using a polynomial hash function
  */
 static unsigned long hashcode(const char* ip) {
-  const int len = strlen(ip);
+  const int len = str_len(ip);
   unsigned long hashval = 0;
   const int primeval = 31;
 
@@ -97,7 +97,7 @@ static struct IPnode* newnode(const char* ip) {
   struct IPnode* ipnode = (struct IPnode*) malloc(sizeof(struct IPnode));
   if(ipnode) {
     ipnode->next = NULL;
-    int iplen = strlen(ip) + 1;
+    int iplen = str_len(ip) + 1;
     ipnode->ip = (char *) alloc(iplen);
     if(ipnode->ip) {
       byte_copy(ipnode->ip, iplen, ip);
@@ -226,7 +226,7 @@ static int intializemutexes() {
  * Returns 0 if IP should not be allowed, 1 otherwise
  */
 int allowaccesstoip(const char* ip) {
-  if(!ip) {
+  if(!ip || !alreadyinitialized) {
     return 0;
   }
 
@@ -241,7 +241,7 @@ int allowaccesstoip(const char* ip) {
   // Search within the hashbucket if the IP exists
   struct IPnode* curr = h[bucketnum].begin;
   while(curr) {
-    if(strcmp(curr->ip,ip) == 0) {
+    if(str_equal(curr->ip, ip)) {
       found = 1;
       break;
     }
@@ -253,32 +253,15 @@ int allowaccesstoip(const char* ip) {
 
   return found;
 }
- 
+
 /*
  * Thread invoked during dnscache startup to keep track of accesscontrol list updates
  * Determine whether an IP has been greenlit or not based on the accesscontrol list
  */
-void* updateAccessControl(void *param) {
-  if(!param) {
+void* updateAccessControl(void *dummyparam) {
+  if(!alreadyinitialized) {
     return NULL;
   }
-
-  // Just a safety check, allow access control module to be initialized only once
-  if(alreadyinitialized) {
-    return NULL;
-  }
-
-  if(intializemutexes() != 1) {
-    return NULL;
-  }
-  initializehashbuckets();
-
-  int len = strlen((char*)param) + 1;
-  accesscontrolpath = alloc(strlen((char*)param) + 1);
-  byte_copy(accesscontrolpath, len, (char *) param);
-
-  alreadyinitialized = 1;
-
   while(keepRunning == 1) {
     shortSleep(2);
     if(probefile()) {
@@ -287,4 +270,36 @@ void* updateAccessControl(void *param) {
   }
 
   return NULL;
+}
+
+/*
+ * Initialize accesscontrol by providing accesscontrol file path and the hash buckets
+ * Return 1 if successful -1 in case of failure
+ */
+int initializeaccesscontrol(const char *path) {
+  if(!path) {
+    return -1;
+  }
+
+  // Just a safety check, allow access control module to be initialized only once
+  if(alreadyinitialized) {
+    return -1;
+  }
+
+  if(intializemutexes() != 1) {
+    return -1;
+  }
+  initializehashbuckets();
+
+  int len = str_len(path) + 1;
+  accesscontrolpath = alloc(len);
+  if(!accesscontrolpath) {
+    return -1;
+  }
+
+  byte_copy(accesscontrolpath, len, path);
+
+  alreadyinitialized = 1;
+
+  return 1;
 }
