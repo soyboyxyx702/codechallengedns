@@ -5,7 +5,7 @@ SHELL=/bin/sh
 default: it
 
 clean:
-	rm *.o *.a load
+	rm -rf *.o *.a *.lib auto-str auto_home.c axfr-get axfrdns axfrdns-conf cachetest chkshsgr choose compile direntry.h dnscache dnscache-conf dnsfilter dnsip dnsipq dnsmx dnsname dnsq dnsqr dnstrace dnstracesort dnstxt hasdevtcp.h hasshsgr.h install instcheck iopause.h load makelib pickdns pickdns-conf pickdns-data random-ip rbldns rbldns-conf rbldns-data rts select.h systype tinydns tinydns-conf tinydns-data tinydns-edit tinydns-get uint32.h uint64.h utime walldns walldns-conf 
 
 accesscontrol.o: \
 compile accesscontrol.c accesscontrol.h alloc.h byte.h globals.h uint64.h
