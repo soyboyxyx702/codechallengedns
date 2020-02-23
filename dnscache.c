@@ -27,7 +27,6 @@
 #include "globals.h"
 #include "accesscontrol.h"
 #include "distributedcache.h"
-#include "buffer.h"
 
 static int packetquery(char *buf,unsigned int len,char **q,char qtype[2],char qclass[2],char id[2])
 {
@@ -498,7 +497,6 @@ int main()
   }
   pthread_create(&tidaccesscontrol, 0, updateAccessControl, 0);
   if(distributedcache) {
-    buffer_puts(buffer_2, "create dist cache thread\n");
     pthread_create(&tiddistributedcache, 0, monitorserverlistforupdates, 0);
   }
 

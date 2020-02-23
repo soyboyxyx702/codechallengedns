@@ -5,8 +5,6 @@
 #include "exit.h"
 #include "tai.h"
 #include "uint32.h"
-#include "buffer.h"
-#include <stdio.h>
 
 uint64 cache_motion = 0;
 
@@ -287,11 +285,7 @@ void cache_set(const char *key,unsigned int keylen,const char *data,unsigned int
 int cache_init(unsigned int distributedcache, unsigned int cachesize, const char* cacheserversfile)
 {
   usedistributedcache = distributedcache;
-  char temp[1024];
-  sprintf(temp, "cache init %d %d\n", usedistributedcache, distributedcache);
-  buffer_puts(buffer_2, temp);
   if(usedistributedcache) {
-    buffer_puts(buffer_2, "dist cache init\n");
     return distributed_cache_init(cacheserversfile);
   }
 
