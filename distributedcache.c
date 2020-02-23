@@ -16,21 +16,38 @@ void distributed_cache_set(const char *key, unsigned int keylen, const char *dat
   if(!initialized) {
     return;
   }
+
+  char* ip = 0;
+  unsigned int port;
+  if(getserverforkey(key, keylen, &ip, &port) != 1) {
+    if(ip) {
+      alloc_free(ip);
+    }
+    return;
+  }
 }
 
 char *distributed_cache_get(const char *key, unsigned int keylen, unsigned int *datalen, uint32 *ttl) {
   if(!initialized) {
     return 0;
   }
+
+  char* ip = 0;
+  unsigned int port;
+  if(getserverforkey(key, keylen, &ip, &port) != 1) {
+    if(ip) {
+      alloc_free(ip);
+    }
+    return 0;
+  }
+  return 0;
 }
 
 void* monitorserverlistforupdates(void *dummyparam) {
-  buffer_puts(buffer_2, "monitor file\n");
   if(!initialized) {
     return 0;
   }
   while(keepRunning == 1) {
-    buffer_puts(buffer_2, "monitor file\n");
     shortsleep(2);
     if(probefile(cacheserverspath, &lastmodificationtime)) {
       buffer_puts(buffer_2, "cache servers list updated\n");

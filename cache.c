@@ -175,11 +175,8 @@ void cache_delete(const char *key, unsigned int keylen) {
 
 char *cache_get(const char *key, unsigned int keylen, unsigned int *datalen, uint32 *ttl)
 {
-  buffer_puts(buffer_2, "cache_get\n");
   if(usedistributedcache) {
-    datalen = 0;
-    ttl = 0;
-    return 0;
+    return distributed_cache_get(key, keylen, datalen, ttl);
   }
 
   struct tai expire;
@@ -215,9 +212,8 @@ char *cache_get(const char *key, unsigned int keylen, unsigned int *datalen, uin
 
 void cache_set(const char *key,unsigned int keylen,const char *data,unsigned int datalen,uint32 ttl)
 {
-  buffer_puts(buffer_2, "cache_set\n");
   if(usedistributedcache) {
-    return;
+    return distributed_cache_set(key, keylen, data, datalen, ttl);
   }
 
   struct tai now;

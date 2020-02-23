@@ -174,6 +174,10 @@ int getserverforkey(const char* key, const int keylen, char** ip, unsigned int* 
   }
   int hashposition = hashcode(key, keylen) % 360;
 
+  char temp[1024];
+  sprintf(temp, "hashcode for key %lu %d\n", hashcode(key, keylen), hashposition);
+  buffer_puts(buffer_2, temp);
+
   /*
    * Critical section
    */
@@ -208,5 +212,8 @@ int getserverforkey(const char* key, const int keylen, char** ip, unsigned int* 
 
   *port = curr->port;
   pthread_mutex_unlock(&hashmutex);
+
+  sprintf(temp, "selecting server ip %s port %d\n", *ip, *port);
+  buffer_puts(buffer_2, temp);
   return 1;
 }
