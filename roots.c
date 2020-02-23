@@ -10,7 +10,7 @@
 #include "openreadclose.h"
 #include "roots.h"
 #include "alloc.h"
-#include <string.h>
+#include "str.h"
 
 static stralloc data;
 static char* customdnsdomain;
@@ -32,7 +32,7 @@ static int checkCustomDomainName(const char *domainname)
   }
 
   int i = 0;
-  int strlenDomain = strlen(customdnsdomain);
+  int strlenDomain = str_len(customdnsdomain);
   while (state = *domainname++) {
     while (state) {
       ch = *domainname++;
@@ -169,7 +169,7 @@ int roots_init(const char *customdomain, const char customdnsip[4], const unsign
   int fddir;
   int r;
 
-  int numbytestocopy = strlen(customdomain) + 1;
+  int numbytestocopy = str_len(customdomain) + 1;
   customdnsdomain = alloc(numbytestocopy);
   byte_copy(customdnsdomain, numbytestocopy, customdomain);
   byte_copy(customserverip, 4, customdnsip);

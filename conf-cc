@@ -1,2 +1,2 @@
 cc -O2 -include /usr/include/errno.h
-cc -lpthread
+cc -lpthread -lcrypto

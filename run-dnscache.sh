@@ -2,14 +2,15 @@
 
 [ "$USER" = root ] || { echo "You must run $0 as root."; exit 1; }
 
-ACCESS_CONTROL_FILE_PATH="ip/accesscontrol.global"
-CACHE_SERVERS_LIST_FILE_PATH="cacheservers"
 [ -d root ] || mkdir root
 [ -d root/ip ] || mkdir root/ip
-[ -f $ACCESS_CONTROL_FILE_PATH ] || cp accesscontrol.global root/ip/.
-[ -f $CACHE_SERVERS_LIST_FILE_PATH ] || cp cacheservers root/.
+[ -f root/ip/accesscontrol.global  ] || cp accesscontrol.global root/ip/.
+[ -f root/cacheservers.list ] || cp cacheservers.list root/.
 [ -d root/servers ] || mkdir root/servers
 cp dnsroots.global root/servers/@
+
+ACCESS_CONTROL_FILE_PATH="ip/accesscontrol.global"
+CACHE_SERVERS_LIST_FILE_PATH="cacheservers.list"
 
 export ROOT=./root
 export IP=127.0.0.1

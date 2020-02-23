@@ -1,16 +1,14 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/select.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
+
 #include "accesscontrol.h"
 #include "alloc.h"
 #include "byte.h"
-#include "dnscache.h"
 #include "error.h"
+#include "globals.h"
 #include "str.h"
+#include "uint64.h"
 
 #define MAX_BUCKETS 10000
 struct IPnode {
@@ -23,72 +21,12 @@ struct Hashbucket {
   struct IPnode* end;
 };
 
-static time_t lastModificationTime = 0;
+static time_t lastmodificationtime = 0;
 static char* accesscontrolpath = 0;
 static int alreadyinitialized = 0;
 static struct Hashbucket h[MAX_BUCKETS];
 static struct Hashbucket hauxillary[MAX_BUCKETS];
 static pthread_mutex_t hashmutex[MAX_BUCKETS];
-
-/*
- * Custom integer power function
- */
-static unsigned long ipow(int base, int exponent) {
-  unsigned long result = 1;
-  int i;
-  for(int i = 1; i <= exponent; i++) {
-    result *= base;
-  }
-
-  return result;
-}
-
-/*
- * Thread sleep for a given duration
- */
-static void shortSleep(int sec) {
-  struct timeval tv;
-  tv.tv_sec = sec;
-  tv.tv_usec = 0;
-  select(0, 0, 0, 0, &tv);
-}
-
-/*
- * probe access control file for change
- * return: 1 if file has been modified, else return 0
- */
-static int probefile() {
-  struct stat statbuf;
-  int ret = stat(accesscontrolpath, &statbuf);
-
-  if(ret == -1) {
-    return 0;
-  }
-  if(lastModificationTime == statbuf.st_mtime) {
-    return 0;
-  }
-  lastModificationTime = statbuf.st_mtime;
-  return 1;
-}
-
-/*
- * return hash value of a string (IP) using a polynomial hash function
- */
-static unsigned long hashcode(const char* ip) {
-  const int len = str_len(ip);
-  unsigned long hashval = 0;
-  const int primeval = 31;
-
-  int exponent = len - 1;
-  unsigned long multiplier = ipow(primeval, exponent);
-  int i;
-  for(i = 0; i < len; i++) {
-    hashval += multiplier * ip[i];
-    multiplier /= primeval;
-  }
-
-  return hashval;
-}
 
 /*
  * create a new node for the IP address to be stored into the hash bucket
@@ -114,14 +52,25 @@ static struct IPnode* newnode(const char* ip) {
 /*
  * Invoked whenever the access control list has been updated & update the hash bucket with IP entries
  */
-static void moveEntriesFromAuxillaryToMainHashbucket() {
+static void moveentriestomainbucket() {
   int bucketnum;
   for(bucketnum = 0; bucketnum < MAX_BUCKETS; bucketnum++) {
-    // critical section
+    // critical section, swap out auxillary bucket and main bucket pointers
     pthread_mutex_lock(&hashmutex[bucketnum]);
 
-    // delete entries for current bucket
-    struct IPnode* curr = h[bucketnum].begin;
+    struct IPnode* temp = h[bucketnum].begin;
+    h[bucketnum].begin = hauxillary[bucketnum].begin;
+    hauxillary[bucketnum].begin = temp;
+    
+    temp = h[bucketnum].end;
+    h[bucketnum].end = hauxillary[bucketnum].end;
+    hauxillary[bucketnum].end = temp;
+
+    // end critical section
+    pthread_mutex_unlock(&hashmutex[bucketnum]);
+
+    // clear out auxillary hash bucket, need not be in critical region
+    struct IPnode* curr = hauxillary[bucketnum].begin;
     while(curr) {
       struct IPnode* next = curr->next;
       alloc_free(curr->ip);
@@ -130,13 +79,6 @@ static void moveEntriesFromAuxillaryToMainHashbucket() {
     }
 
     // make current bucket point to new entries read from access control list stored in auxillary hash bucket
-    h[bucketnum].begin = hauxillary[bucketnum].begin;
-    h[bucketnum].end = hauxillary[bucketnum].end;
-
-    // end critical section
-    pthread_mutex_unlock(&hashmutex[bucketnum]);
-
-    // clear out auxillary hash bucket, need not be in critical region
     hauxillary[bucketnum].begin = 0;
     hauxillary[bucketnum].end = 0;
   }
@@ -149,7 +91,7 @@ static void addIPtoauxillarybucket(const char* ip) {
   if(!ip) {
     return;
   }
-  unsigned long hashval = hashcode(ip);
+  uint64 hashval = hashcode(ip, str_len(ip));
   int bucketnum = hashval % MAX_BUCKETS;
 
   struct IPnode* ipnode = newnode(ip);
@@ -178,17 +120,20 @@ static void getUpdatedAccessControlList() {
 
   while(!feof(fptr)) {
     size_t len;
-    char* ip;
+    char* ip = 0;
     size_t ret = getline(&ip, &len, fptr);
     if(!feof(fptr)) {
-      if(ip[ret - 1] == '\n') {
-        ip[ret - 1] = '\0';
+      if(ip) {
+        if(ip[ret - 1] == '\n') {
+          ip[ret - 1] = '\0';
+        }
+        addIPtoauxillarybucket(ip);
+        free(ip);
       }
-      addIPtoauxillarybucket(ip);
     }
   }
 
-  moveEntriesFromAuxillaryToMainHashbucket();
+  moveentriestomainbucket();
   
   fclose(fptr);
 }
@@ -231,7 +176,7 @@ int allowaccesstoip(const char* ip) {
   }
 
   // Determine the bucket for the IP based on its hash code
-  unsigned long hashval = hashcode(ip);
+  uint64 hashval = hashcode(ip, str_len(ip));
   int bucketnum = hashval % MAX_BUCKETS;
   int found = 0;
 
@@ -263,8 +208,8 @@ void* updateAccessControl(void *dummyparam) {
     return 0;
   }
   while(keepRunning == 1) {
-    shortSleep(2);
-    if(probefile()) {
+    shortsleep(2);
+    if(probefile(accesscontrolpath, &lastmodificationtime)) {
       getUpdatedAccessControlList();
     }
   }

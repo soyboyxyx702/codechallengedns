@@ -1,9 +1,11 @@
 #include "alloc.h"
 #include "byte.h"
-#include "uint32.h"
+#include "cache.h"
+#include "distributedcache.h"
 #include "exit.h"
 #include "tai.h"
-#include "cache.h"
+#include "uint32.h"
+#include "buffer.h"
 #include <stdio.h>
 
 uint64 cache_motion = 0;
@@ -173,7 +175,11 @@ void cache_delete(const char *key, unsigned int keylen) {
 
 char *cache_get(const char *key, unsigned int keylen, unsigned int *datalen, uint32 *ttl)
 {
+  buffer_puts(buffer_2, "cache_get\n");
   if(usedistributedcache) {
+    datalen = 0;
+    ttl = 0;
+    return 0;
   }
 
   struct tai expire;
@@ -209,7 +215,9 @@ char *cache_get(const char *key, unsigned int keylen, unsigned int *datalen, uin
 
 void cache_set(const char *key,unsigned int keylen,const char *data,unsigned int datalen,uint32 ttl)
 {
+  buffer_puts(buffer_2, "cache_set\n");
   if(usedistributedcache) {
+    return;
   }
 
   struct tai now;
@@ -283,12 +291,12 @@ void cache_set(const char *key,unsigned int keylen,const char *data,unsigned int
 int cache_init(unsigned int distributedcache, unsigned int cachesize, const char* cacheserversfile)
 {
   usedistributedcache = distributedcache;
+  char temp[1024];
+  sprintf(temp, "cache init %d %d\n", usedistributedcache, distributedcache);
+  buffer_puts(buffer_2, temp);
   if(usedistributedcache) {
-    if(!cacheserversfile) {
-      return 0;
-    }
-
-    return 1;
+    buffer_puts(buffer_2, "dist cache init\n");
+    return distributed_cache_init(cacheserversfile);
   }
 
   if (x) {

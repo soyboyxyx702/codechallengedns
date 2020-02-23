@@ -1,6 +1,5 @@
 #include <pthread.h>
 #include <signal.h>
-#include "accesscontrol.h"
 #include <unistd.h>
 #include "env.h"
 #include "exit.h"
@@ -25,6 +24,10 @@
 #include "log.h"
 #include "okclient.h"
 #include "droproot.h"
+#include "globals.h"
+#include "accesscontrol.h"
+#include "distributedcache.h"
+#include "buffer.h"
 
 static int packetquery(char *buf,unsigned int len,char **q,char qtype[2],char qclass[2],char id[2])
 {
@@ -312,7 +315,6 @@ iopause_fd io[3 + MAXUDP + MAXTCP];
 iopause_fd *udp53io;
 iopause_fd *tcp53io;
 
-int keepRunning = 1;
 static void doit(void)
 {
   int j;
@@ -400,7 +402,7 @@ int main()
 {
   char *x;
   unsigned long cachesize = 0L;
-  pthread_t thread1;
+  pthread_t tidaccesscontrol, tiddistributedcache;
   struct sigaction act;
   act.sa_handler = sigHandler;
   sigaction(SIGINT, &act, 0);
@@ -459,7 +461,7 @@ int main()
       strerr_die2x(111,FATAL,"$DISTRIBUTEDCACHESERVERSFILE not set");
   }
   if (!cache_init(distributedcache, cachesize, cacheserverspath))
-    strerr_die3x(111,FATAL,"not enough memory for cache of size ",x);
+    strerr_die2x(111,FATAL,"cache initialization failed");
 
   if (env_get("HIDETTL"))
     response_hidettl();
@@ -494,10 +496,18 @@ int main()
   if(initializeaccesscontrol(x) != 1) {
     strerr_die2sys(111,FATAL,"Unable to initialize accesscontrol");
   }
-  pthread_create( &thread1, 0, updateAccessControl, 0);
+  pthread_create(&tidaccesscontrol, 0, updateAccessControl, 0);
+  if(distributedcache) {
+    buffer_puts(buffer_2, "create dist cache thread\n");
+    pthread_create(&tiddistributedcache, 0, monitorserverlistforupdates, 0);
+  }
 
   log_startup();
   doit();
 
-  pthread_join(thread1, 0);
+  pthread_join(tidaccesscontrol, 0);
+
+  if(distributedcache) {
+    pthread_join(tiddistributedcache, 0);
+  }
 }

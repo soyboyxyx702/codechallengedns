@@ -28,6 +28,8 @@ For a quick way to set up a build environment on Debian Linux, follow these inst
 
 Programming Challenges:
 
+For the project to successfully compile on Ubuntu or equivalent Linux distribution libpthread and libssl-dev or equivalent are required.
+Optionally install the following packages for manpages - manpages-posix manpages-posix-dev libssl-doc
 
 1. myip.opendns.com
 ----------------

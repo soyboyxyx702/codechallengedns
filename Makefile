@@ -5,10 +5,10 @@ SHELL=/bin/sh
 default: it
 
 clean:
-	rm *.o *.a
+	rm *.o *.a load
 
 accesscontrol.o: \
-compile accesscontrol.c accesscontrol.h alloc.h byte.h dnscache.h
+compile accesscontrol.c accesscontrol.h alloc.h byte.h globals.h uint64.h
 	./compile accesscontrol.c
 
 alloc.a: \
@@ -155,17 +155,18 @@ compile byte_zero.c byte.h
 	./compile byte_zero.c
 
 cache.o: \
-compile cache.c alloc.h byte.h uint32.h exit.h tai.h uint64.h cache.h \
-uint32.h uint64.h
+compile cache.c alloc.h byte.h uint32.h exit.h tai.h uint64.h cache.h distributedcache.h
 	./compile cache.c
 
 cachetest: \
-load cachetest.o cache.o libtai.a buffer.a alloc.a unix.a byte.a
-	./load cachetest cache.o libtai.a buffer.a alloc.a unix.a \
-	byte.a 
+load cachetest.o cache.o circularserverhash.o distributedcache.o globals.o \
+libtai.a buffer.a alloc.a unix.a byte.a
+	./load cachetest cache.o circularserverhash.o distributedcache.o globals.o \
+	libtai.a buffer.a alloc.a unix.a byte.a 
 
 cachetest.o: \
-compile cachetest.c buffer.h exit.h cache.h uint32.h uint64.h str.h
+compile cachetest.c buffer.h circularserverhash.h distributedcache.h globals.h \
+exit.h cache.h uint32.h uint64.h str.h
 	./compile cachetest.c
 
 case_diffb.o: \
@@ -216,6 +217,10 @@ warn-auto.sh choose.sh conf-home
 	> choose
 	chmod 755 choose
 
+circularserverhash.o: \
+compile circularserverhash.c alloc.h byte.h circularserverhash.h globals.h scan.h str.h uint64.h
+	./compile circularserverhash.c
+
 compile: \
 warn-auto.sh conf-cc
 	( cat warn-auto.sh; \
@@ -231,6 +236,10 @@ uint64.h taia.h dd.h
 direntry.h: \
 choose compile trydrent.c direntry.h1 direntry.h2
 	./choose c trydrent direntry.h1 direntry.h2 > direntry.h
+
+distributedcache.o: \
+compile distributedcache.c alloc.h byte.h circularserverhash.h distributedcache.h globals.h str.h
+	./compile distributedcache.c
 
 dns.a: \
 makelib dns_dfd.o dns_domain.o dns_dtda.o dns_ip.o dns_ipq.o dns_mx.o \
@@ -325,12 +334,15 @@ stralloc.h iopause.h taia.h tai.h uint64.h taia.h
 	./compile dns_txt.c
 
 dnscache: \
-load dnscache.o droproot.o okclient.o log.o cache.o query.o \
-response.o dd.o roots.o iopause.o prot.o accesscontrol.o dns.a env.a alloc.a buffer.a \
+load dnscache.o droproot.o okclient.o log.o cache.o globals.o query.o \
+response.o dd.o roots.o iopause.o prot.o accesscontrol.o \
+globals.o distributedcache.o circularserverhash.o \
+dns.a env.a alloc.a buffer.a \
 libtai.a unix.a byte.a socket.lib
 	./load dnscache droproot.o okclient.o log.o cache.o \
-	query.o response.o dd.o roots.o iopause.o prot.o accesscontrol.o dns.a \
-	env.a alloc.a buffer.a libtai.a unix.a byte.a  `cat \
+	query.o response.o dd.o roots.o iopause.o prot.o \
+	accesscontrol.o globals.o distributedcache.o circularserverhash.o \
+	dns.a env.a alloc.a buffer.a libtai.a unix.a byte.a  `cat \
 	socket.lib`
 
 dnscache-conf: \
@@ -351,7 +363,7 @@ uint16.h uint64.h socket.h uint16.h dns.h stralloc.h gen_alloc.h \
 iopause.h taia.h tai.h uint64.h taia.h taia.h byte.h roots.h fmt.h \
 iopause.h query.h dns.h uint32.h alloc.h response.h uint32.h cache.h \
 uint32.h uint64.h ndelay.h log.h uint64.h okclient.h droproot.h \
-accesscontrol.h dnscache.h
+accesscontrol.h distributedcache.h globals.h
 	./compile dnscache.c
 
 dnsfilter: \
@@ -509,6 +521,10 @@ getopt.a: \
 makelib sgetopt.o subgetopt.o
 	./makelib getopt.a sgetopt.o subgetopt.o
 
+globals.o: \
+compile globals.c globals.h
+	./compile globals.c
+
 hasdevtcp.h: \
 systype hasdevtcp.h1 hasdevtcp.h2
 	( case "`cat systype`" in \
@@ -576,7 +592,7 @@ warn-auto.sh conf-ld
 	echo 'main="$$1"; shift'; \
 	echo exec "`head -1 conf-ld`" \
 	'-o "$$main" "$$main".o $${1+"$$@"}' \
-	'-lpthread' \
+	'-lpthread -lcrypto' \
 	) > load
 	chmod 755 load
 
