@@ -9,6 +9,7 @@ auto_home.c
 axfr-get
 axfrdns
 axfrdns-conf
+cacheserver
 cachetest
 chkshsgr
 choose

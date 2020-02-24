@@ -5,7 +5,7 @@ SHELL=/bin/sh
 default: it
 
 clean:
-	rm -rf *.o *.a *.lib auto-str auto_home.c axfr-get axfrdns axfrdns-conf cachetest chkshsgr choose compile direntry.h dnscache dnscache-conf dnsfilter dnsip dnsipq dnsmx dnsname dnsq dnsqr dnstrace dnstracesort dnstxt hasdevtcp.h hasshsgr.h install instcheck iopause.h load makelib pickdns pickdns-conf pickdns-data random-ip rbldns rbldns-conf rbldns-data rts select.h systype tinydns tinydns-conf tinydns-data tinydns-edit tinydns-get uint32.h uint64.h utime walldns walldns-conf 
+	rm -rf *.o *.a *.lib auto-str auto_home.c axfr-get axfrdns axfrdns-conf cacheserver cachetest chkshsgr choose compile direntry.h dnscache dnscache-conf dnsfilter dnsip dnsipq dnsmx dnsname dnsq dnsqr dnstrace dnstracesort dnstxt hasdevtcp.h hasshsgr.h install instcheck iopause.h load makelib pickdns pickdns-conf pickdns-data random-ip rbldns rbldns-conf rbldns-data rts select.h systype tinydns tinydns-conf tinydns-data tinydns-edit tinydns-get uint32.h uint64.h utime walldns walldns-conf 
 
 accesscontrol.o: \
 compile accesscontrol.c accesscontrol.h alloc.h byte.h \
@@ -158,6 +158,16 @@ compile byte_zero.c byte.h
 cache.o: \
 compile cache.c alloc.h byte.h uint32.h exit.h tai.h uint64.h cache.h distributedcache.h
 	./compile cache.c
+
+cacheserver: \
+load cacheserver.o scan_uint.o strerr_die.o \
+buffer.a byte.a unix.a
+	./load cacheserver scan_uint.o strerr_die.o \
+	buffer.a byte.a unix.a
+
+cacheserver.o: \
+compile cacheserver.c exit.h scan.h strerr.h
+	./compile cacheserver.c
 
 cachetest: \
 load cachetest.o cache.o circularserverhash.o distributedcache.o \
