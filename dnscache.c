@@ -391,7 +391,7 @@ static void doit(void)
 
 char seed[128];
 
-void sigHandler(int sig) {
+void sighandler(int sig) {
   if(sig == SIGINT) {
     keepRunning = 0;
   }
@@ -403,7 +403,7 @@ int main()
   unsigned long cachesize = 0L;
   pthread_t tidaccesscontrol, tiddistributedcache;
   struct sigaction act;
-  act.sa_handler = sigHandler;
+  act.sa_handler = sighandler;
   sigaction(SIGINT, &act, 0);
 
   x = env_get("IP");

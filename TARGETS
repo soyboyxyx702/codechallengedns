@@ -200,8 +200,11 @@ dnsq
 dnstrace.o
 dnstrace
 dnstracesort
+cacherequesthandler.o
 cachetest.o
 cachetest
+cacheserver.o
+cacheserver
 utime.o
 utime
 rts

@@ -61,6 +61,9 @@ query.h
 query.c
 cache.h
 cache.c
+cacherequesthandler.c
+cacherequesthandler.h
+cacheserver.c
 log.h
 log.c
 okclient.h
@@ -164,6 +167,7 @@ prot.h
 readclose.c
 readclose.h
 scan.h
+scan_uint.c
 scan_ulong.c
 seek.h
 seek_set.c

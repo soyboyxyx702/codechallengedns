@@ -126,12 +126,13 @@ compile buffer_write.c buffer.h
 byte.a: \
 makelib byte_chr.o byte_copy.o byte_cr.o byte_diff.o byte_zero.o \
 case_diffb.o case_diffs.o case_lowerb.o fmt_ulong.o ip4_fmt.o \
-ip4_scan.o scan_uint.o scan_ulong.o str_chr.o str_diff.o str_len.o str_rchr.o \
+ip4_scan.o scan_uint.o scan_ushort.o scan_ulong.o str_chr.o str_diff.o str_len.o str_rchr.o \
 str_start.o uint16_pack.o uint16_unpack.o uint32_pack.o \
 uint32_unpack.o
 	./makelib byte.a byte_chr.o byte_copy.o byte_cr.o \
 	byte_diff.o byte_zero.o case_diffb.o case_diffs.o \
-	case_lowerb.o fmt_ulong.o ip4_fmt.o ip4_scan.o scan_uint.o scan_ulong.o \
+	case_lowerb.o fmt_ulong.o ip4_fmt.o ip4_scan.o \
+	scan_uint.o scan_ushort.o scan_ulong.o \
 	str_chr.o str_diff.o str_len.o str_rchr.o str_start.o \
 	uint16_pack.o uint16_unpack.o uint32_pack.o uint32_unpack.o
 
@@ -159,14 +160,18 @@ cache.o: \
 compile cache.c alloc.h byte.h uint32.h exit.h tai.h uint64.h cache.h distributedcache.h
 	./compile cache.c
 
+cacherequesthandler.o: \
+compile cacherequesthandler.c
+	./compile cacherequesthandler.c
+
 cacheserver: \
-load cacheserver.o scan_uint.o strerr_die.o \
-buffer.a byte.a unix.a
-	./load cacheserver scan_uint.o strerr_die.o \
-	buffer.a byte.a unix.a
+load cacheserver.o cacherequesthandler.o socket_accept.o socket_bind.o \
+alloc.a buffer.a byte.a unix.a
+	./load cacheserver cacherequesthandler.o socket_accept.o socket_bind.o \
+	alloc.a buffer.a byte.a unix.a
 
 cacheserver.o: \
-compile cacheserver.c exit.h scan.h strerr.h
+compile cacheserver.c alloc.h byte.h cacherequesthandler.h exit.h ip4.h ndelay.h scan.h socket.h strerr.h
 	./compile cacheserver.c
 
 cachetest: \
@@ -723,7 +728,7 @@ dnscache-conf dnscache walldns-conf walldns rbldns-conf rbldns \
 rbldns-data pickdns-conf pickdns pickdns-data tinydns-conf tinydns \
 tinydns-data tinydns-get tinydns-edit axfr-get axfrdns-conf axfrdns \
 dnsip dnsipq dnsname dnstxt dnsmx dnsfilter random-ip dnsqr dnsq \
-dnstrace dnstracesort cachetest utime rts
+dnstrace dnstracesort cachetest utime rts cacheserver
 
 prot.o: \
 compile prot.c hasshsgr.h prot.h
@@ -807,6 +812,10 @@ warn-auto.sh rts.sh conf-home
 scan_uint.o: \
 compile scan_uint.c scan.h
 	./compile scan_uint.c
+
+scan_ushort.o: \
+compile scan_ushort.c scan.h uint16.h
+	./compile scan_ushort.c
 
 scan_ulong.o: \
 compile scan_ulong.c scan.h
