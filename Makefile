@@ -8,7 +8,8 @@ clean:
 	rm -rf *.o *.a *.lib auto-str auto_home.c axfr-get axfrdns axfrdns-conf cachetest chkshsgr choose compile direntry.h dnscache dnscache-conf dnsfilter dnsip dnsipq dnsmx dnsname dnsq dnsqr dnstrace dnstracesort dnstxt hasdevtcp.h hasshsgr.h install instcheck iopause.h load makelib pickdns pickdns-conf pickdns-data random-ip rbldns rbldns-conf rbldns-data rts select.h systype tinydns tinydns-conf tinydns-data tinydns-edit tinydns-get uint32.h uint64.h utime walldns walldns-conf 
 
 accesscontrol.o: \
-compile accesscontrol.c accesscontrol.h alloc.h byte.h globals.h uint64.h
+compile accesscontrol.c accesscontrol.h alloc.h byte.h globals.h \
+hash.h probefile.h sleep.h uint64.h
 	./compile accesscontrol.c
 
 alloc.a: \
@@ -160,8 +161,10 @@ compile cache.c alloc.h byte.h uint32.h exit.h tai.h uint64.h cache.h distribute
 
 cachetest: \
 load cachetest.o cache.o circularserverhash.o distributedcache.o globals.o \
+hash.o probefile.o sleep.o \
 libtai.a buffer.a alloc.a unix.a byte.a
 	./load cachetest cache.o circularserverhash.o distributedcache.o globals.o \
+	hash.o probefile.o sleep.o \
 	libtai.a buffer.a alloc.a unix.a byte.a 
 
 cachetest.o: \
@@ -218,7 +221,8 @@ warn-auto.sh choose.sh conf-home
 	chmod 755 choose
 
 circularserverhash.o: \
-compile circularserverhash.c alloc.h byte.h circularserverhash.h globals.h scan.h str.h uint64.h
+compile circularserverhash.c alloc.h byte.h circularserverhash.h \
+globals.h hash.h scan.h str.h uint64.h
 	./compile circularserverhash.c
 
 compile: \
@@ -238,7 +242,8 @@ choose compile trydrent.c direntry.h1 direntry.h2
 	./choose c trydrent direntry.h1 direntry.h2 > direntry.h
 
 distributedcache.o: \
-compile distributedcache.c alloc.h byte.h circularserverhash.h distributedcache.h globals.h str.h
+compile distributedcache.c alloc.h byte.h circularserverhash.h distributedcache.h \
+globals.h probefile.h sleep.h str.h
 	./compile distributedcache.c
 
 dns.a: \
@@ -337,11 +342,13 @@ dnscache: \
 load dnscache.o droproot.o okclient.o log.o cache.o globals.o query.o \
 response.o dd.o roots.o iopause.o prot.o accesscontrol.o \
 globals.o distributedcache.o circularserverhash.o \
+sleep.o hash.o probefile.o \
 dns.a env.a alloc.a buffer.a \
 libtai.a unix.a byte.a socket.lib
 	./load dnscache droproot.o okclient.o log.o cache.o \
 	query.o response.o dd.o roots.o iopause.o prot.o \
 	accesscontrol.o globals.o distributedcache.o circularserverhash.o \
+	sleep.o hash.o probefile.o \
 	dns.a env.a alloc.a buffer.a libtai.a unix.a byte.a  `cat \
 	socket.lib`
 
@@ -522,7 +529,7 @@ makelib sgetopt.o subgetopt.o
 	./makelib getopt.a sgetopt.o subgetopt.o
 
 globals.o: \
-compile globals.c globals.h
+compile globals.c
 	./compile globals.c
 
 hasdevtcp.h: \
@@ -531,6 +538,10 @@ systype hasdevtcp.h1 hasdevtcp.h2
 	  sunos-5.*) cat hasdevtcp.h2 ;; \
 	  *) cat hasdevtcp.h1 ;; \
 	esac ) > hasdevtcp.h
+
+hash.o: \
+compile hash.c uint64.h
+	./compile hash.c
 
 hasshsgr.h: \
 choose compile load tryshsgr.c hasshsgr.h1 hasshsgr.h2 chkshsgr \
@@ -697,6 +708,10 @@ stralloc.h gen_alloc.h iopause.h taia.h tai.h uint64.h taia.h \
 printrecord.h stralloc.h
 	./compile printrecord.c
 
+probefile.o: \
+compile probefile.c uint64.h
+	./compile probefile.c
+
 prog: \
 dnscache-conf dnscache walldns-conf walldns rbldns-conf rbldns \
 rbldns-data pickdns-conf pickdns pickdns-data tinydns-conf tinydns \
@@ -813,6 +828,10 @@ it install
 sgetopt.o: \
 compile sgetopt.c buffer.h sgetopt.h subgetopt.h subgetopt.h
 	./compile sgetopt.c
+
+sleep.o: \
+compile sleep.c
+	./compile sleep.c
 
 socket.lib: \
 trylsock.c compile load

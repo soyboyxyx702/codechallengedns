@@ -7,6 +7,9 @@
 #include "byte.h"
 #include "error.h"
 #include "globals.h"
+#include "hash.h"
+#include "probefile.h"
+#include "sleep.h"
 #include "str.h"
 #include "uint64.h"
 

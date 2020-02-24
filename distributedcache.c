@@ -5,6 +5,8 @@
 #include "circularserverhash.h"
 #include "distributedcache.h"
 #include "globals.h"
+#include "probefile.h"
+#include "sleep.h"
 #include "str.h"
 #include "buffer.h"
 

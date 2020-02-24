@@ -5,14 +5,14 @@
 #include "alloc.h"
 #include "byte.h"
 #include "circularserverhash.h"
-#include "globals.h"
+#include "hash.h"
 #include "scan.h"
 #include "str.h"
 #include "uint64.h"
 #include "buffer.h"
 
 struct CircularListNode {
-  int hashposition;
+  unsigned int hashposition;
   char* ip;
   unsigned int port;
   struct CircularListNode* next;
@@ -22,6 +22,13 @@ static struct CircularListNode* head = 0;
 static struct CircularListNode* headauxillary = 0;
 
 static pthread_mutex_t hashmutex = PTHREAD_MUTEX_INITIALIZER;
+
+/*
+ * Modulo division by a number independent of number of servers in the system
+ */
+static unsigned int gethashposition(const char* key, int keylen) {
+  return hashcode(key, keylen) % 9999;
+}
 
 /*
  * Add servernode to auxillary circular hash list while maintaining sorted circular hash position order
@@ -36,8 +43,11 @@ static void addservertoauxillarylist(struct CircularListNode* servernode) {
   struct CircularListNode* curr = headauxillary;
 
   /*
-   * Find the earliest entry in the circular hash list with hash position >= new node to be inserted
+   * Find the earliest entry in the circular hash list with hash position > new node to be inserted
    * Can be optimized a bit by using binary search to determine the point of insertion
+   */
+  /*
+   * Does not handle the case when there is a collision i.e. another server occupying the same hash position
    */
   while(curr && curr->hashposition < servernode->hashposition) {
     prev = curr;
@@ -88,12 +98,7 @@ static struct CircularListNode* getnewservernode(const char *serverentry) {
     return 0;
   }
 
-  unsigned long hashval = hashcode(serverentry, len);
-  char temp[1024];
-  sprintf(temp, "hashval %s %ld\n", serverentry, hashval);
-  buffer_puts(buffer_2, temp);
-
-  newnode->hashposition = hashcode(serverentry, len) % 360;
+  newnode->hashposition = gethashposition(serverentry, len);
   return newnode;
 }
 
@@ -172,7 +177,7 @@ int getserverforkey(const char* key, const int keylen, char** ip, unsigned int* 
   if(!key || !port) {
     return -1;
   }
-  int hashposition = hashcode(key, keylen) % 360;
+  int hashposition = gethashposition(key, keylen);
 
   char temp[1024];
   sprintf(temp, "hashcode for key %lu %d\n", hashcode(key, keylen), hashposition);
