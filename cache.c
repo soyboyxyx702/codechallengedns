@@ -153,11 +153,7 @@ void cache_delete(const char *key, unsigned int keylen) {
     return;
   }
 
-  struct tai diffpast;
-  struct tai now;
-  struct tai past;
   uint32 pos;
-  double d;
 
   pos = cache_find(key, keylen);
   if(pos == notfound) {

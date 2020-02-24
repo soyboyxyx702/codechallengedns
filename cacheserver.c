@@ -95,6 +95,14 @@ static void handlerequest(int sockfd, char** response, int* responselen) {
 }
 
 static void sendresponse(int sockfd, char* response, int responselen) {
+  int numsent = 0;
+  while(numsent < responselen) {
+    int ret = send(sockfd, response, responselen - numsent, 0);
+    if(ret == -1) {
+      return;
+    }
+    numsent += ret;
+  }
 }
 
 static void createeventloop(int serverfd) {
@@ -185,6 +193,8 @@ int main(int argc, char **argv) {
   struct sigaction act;
   act.sa_handler = sighandler;
   sigaction(SIGINT, &act, 0);
+
+  cacheinit();
 
   createeventloop(serverfd);
 
