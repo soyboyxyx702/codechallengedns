@@ -128,13 +128,14 @@ makelib byte_chr.o byte_copy.o byte_cr.o byte_diff.o byte_zero.o \
 case_diffb.o case_diffs.o case_lowerb.o fmt_ulong.o ip4_fmt.o \
 ip4_scan.o scan_uint.o scan_ushort.o scan_ulong.o str_chr.o str_diff.o str_len.o str_rchr.o \
 str_start.o uint16_pack.o uint16_unpack.o uint32_pack.o \
-uint32_unpack.o
+uint32_unpack.o uint64_pack.o uint64_unpack.o
 	./makelib byte.a byte_chr.o byte_copy.o byte_cr.o \
 	byte_diff.o byte_zero.o case_diffb.o case_diffs.o \
 	case_lowerb.o fmt_ulong.o ip4_fmt.o ip4_scan.o \
 	scan_uint.o scan_ushort.o scan_ulong.o \
 	str_chr.o str_diff.o str_len.o str_rchr.o str_start.o \
-	uint16_pack.o uint16_unpack.o uint32_pack.o uint32_unpack.o
+	uint16_pack.o uint16_unpack.o uint32_pack.o uint32_unpack.o \
+	uint64_pack.o uint64_unpack.o
 
 byte_chr.o: \
 compile byte_chr.c byte.h
@@ -161,7 +162,7 @@ compile cache.c alloc.h byte.h uint32.h exit.h tai.h uint64.h cache.h distribute
 	./compile cache.c
 
 cacherequesthandler.o: \
-compile cacherequesthandler.c
+compile cacherequesthandler.c alloc.h cacheheader.h tai.h uint32.h uint64.h
 	./compile cacherequesthandler.c
 
 cacheserver: \
@@ -171,7 +172,8 @@ alloc.a buffer.a byte.a unix.a
 	alloc.a buffer.a byte.a unix.a
 
 cacheserver.o: \
-compile cacheserver.c alloc.h byte.h cacherequesthandler.h exit.h ip4.h ndelay.h scan.h socket.h strerr.h
+compile cacheserver.c alloc.h byte.h cacherequesthandler.h exit.h \
+ip4.h ndelay.h scan.h socket.h strerr.h
 	./compile cacheserver.c
 
 cachetest: \
@@ -1130,6 +1132,14 @@ compile uint32_unpack.c uint32.h
 uint64.h: \
 choose compile load tryulong64.c uint64.h1 uint64.h2
 	./choose clr tryulong64 uint64.h1 uint64.h2 > uint64.h
+
+uint64_pack.o: \
+compile uint64_pack.c uint64.h
+	./compile uint64_pack.c
+
+uint64_unpack.o: \
+compile uint64_unpack.c uint64.h
+	./compile uint64_unpack.c
 
 unix.a: \
 makelib buffer_read.o buffer_write.o error.o error_str.o ndelay_off.o \

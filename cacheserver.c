@@ -133,7 +133,9 @@ static void createeventloop(int serverfd) {
           if(newfd == -1) {
             strerr_die2x(111, ERROR, "Unable to accept new connection ");
           }
-          
+
+          socket_tryreservein(newfd, MAXBUF);
+
           if(ndelay_on(newfd) == -1 || addfdtoepoll(epollfd, newfd) == -1) {
             close(newfd);
           }
