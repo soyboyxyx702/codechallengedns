@@ -121,11 +121,14 @@ static uint32 cache_find(const char *key,unsigned int keylen) {
 
         // key has already expired
         if (tai_less(&expire,&now)) {
-          return notfound;
+          // Set key to an invalid value, assumes we don't have a key set to all 0s
+          byte_zero(x + pos + 20, keylen);
+          // Do not return, keep looking if there is a fresh copy of the key in the byte array
         }
-
-        // return position of the entry for the key
-        return pos;
+        else {
+          // return position of the entry for the key
+          return pos;
+        }
       }
     }
 
@@ -161,14 +164,8 @@ void cache_delete(const char *key, unsigned int keylen) {
     return;
   }
 
-  /*
-   * Expire the key by setting its expiry time in the past
-   */
-  tai_now(&now);
-  tai_uint(&diffpast,10);
-  tai_sub(&past, &now, &diffpast);
-
-  tai_pack(x + pos + 12, &past);
+  // Set key to an invalid value, assumes we don't have a key set to all 0s
+  byte_zero(x + pos + 20, keylen);
 }
 
 char *cache_get(const char *key, unsigned int keylen, unsigned int *datalen, uint32 *ttl)
