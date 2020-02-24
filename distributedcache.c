@@ -4,8 +4,8 @@
 #include "byte.h"
 #include "circularserverhash.h"
 #include "distributedcache.h"
-#include "globals.h"
 #include "probefile.h"
+#include "serverstate.h"
 #include "sleep.h"
 #include "str.h"
 #include "buffer.h"
@@ -52,7 +52,6 @@ void* monitorserverlistforupdates(void *dummyparam) {
   while(keepRunning == 1) {
     shortsleep(2);
     if(probefile(cacheserverspath, &lastmodificationtime)) {
-      buffer_puts(buffer_2, "cache servers list updated\n");
       addserverstohashring(cacheserverspath);
     }
   }

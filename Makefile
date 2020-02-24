@@ -8,8 +8,8 @@ clean:
 	rm -rf *.o *.a *.lib auto-str auto_home.c axfr-get axfrdns axfrdns-conf cachetest chkshsgr choose compile direntry.h dnscache dnscache-conf dnsfilter dnsip dnsipq dnsmx dnsname dnsq dnsqr dnstrace dnstracesort dnstxt hasdevtcp.h hasshsgr.h install instcheck iopause.h load makelib pickdns pickdns-conf pickdns-data random-ip rbldns rbldns-conf rbldns-data rts select.h systype tinydns tinydns-conf tinydns-data tinydns-edit tinydns-get uint32.h uint64.h utime walldns walldns-conf 
 
 accesscontrol.o: \
-compile accesscontrol.c accesscontrol.h alloc.h byte.h globals.h \
-hash.h probefile.h sleep.h uint64.h
+compile accesscontrol.c accesscontrol.h alloc.h byte.h \
+hash.h probefile.h serverstate.h sleep.h uint64.h
 	./compile accesscontrol.c
 
 alloc.a: \
@@ -160,16 +160,16 @@ compile cache.c alloc.h byte.h uint32.h exit.h tai.h uint64.h cache.h distribute
 	./compile cache.c
 
 cachetest: \
-load cachetest.o cache.o circularserverhash.o distributedcache.o globals.o \
-hash.o probefile.o sleep.o \
+load cachetest.o cache.o circularserverhash.o distributedcache.o \
+hash.o probefile.o serverstate.o sleep.o \
 libtai.a buffer.a alloc.a unix.a byte.a
-	./load cachetest cache.o circularserverhash.o distributedcache.o globals.o \
-	hash.o probefile.o sleep.o \
+	./load cachetest cache.o circularserverhash.o distributedcache.o \
+	hash.o probefile.o serverstate.o sleep.o \
 	libtai.a buffer.a alloc.a unix.a byte.a 
 
 cachetest.o: \
-compile cachetest.c buffer.h circularserverhash.h distributedcache.h globals.h \
-exit.h cache.h uint32.h uint64.h str.h
+compile cachetest.c buffer.h circularserverhash.h distributedcache.h \
+exit.h cache.h uint32.h uint64.h serverstate.h str.h
 	./compile cachetest.c
 
 case_diffb.o: \
@@ -222,7 +222,7 @@ warn-auto.sh choose.sh conf-home
 
 circularserverhash.o: \
 compile circularserverhash.c alloc.h byte.h circularserverhash.h \
-globals.h hash.h scan.h str.h uint64.h
+hash.h scan.h serverstate.h str.h uint64.h
 	./compile circularserverhash.c
 
 compile: \
@@ -243,7 +243,7 @@ choose compile trydrent.c direntry.h1 direntry.h2
 
 distributedcache.o: \
 compile distributedcache.c alloc.h byte.h circularserverhash.h distributedcache.h \
-globals.h probefile.h sleep.h str.h
+probefile.h serverstate.h sleep.h str.h
 	./compile distributedcache.c
 
 dns.a: \
@@ -339,15 +339,15 @@ stralloc.h iopause.h taia.h tai.h uint64.h taia.h
 	./compile dns_txt.c
 
 dnscache: \
-load dnscache.o droproot.o okclient.o log.o cache.o globals.o query.o \
+load dnscache.o droproot.o okclient.o log.o cache.o query.o \
 response.o dd.o roots.o iopause.o prot.o accesscontrol.o \
-globals.o distributedcache.o circularserverhash.o \
+serverstate.o distributedcache.o circularserverhash.o \
 sleep.o hash.o probefile.o \
 dns.a env.a alloc.a buffer.a \
 libtai.a unix.a byte.a socket.lib
 	./load dnscache droproot.o okclient.o log.o cache.o \
 	query.o response.o dd.o roots.o iopause.o prot.o \
-	accesscontrol.o globals.o distributedcache.o circularserverhash.o \
+	accesscontrol.o serverstate.o distributedcache.o circularserverhash.o \
 	sleep.o hash.o probefile.o \
 	dns.a env.a alloc.a buffer.a libtai.a unix.a byte.a  `cat \
 	socket.lib`
@@ -370,7 +370,7 @@ uint16.h uint64.h socket.h uint16.h dns.h stralloc.h gen_alloc.h \
 iopause.h taia.h tai.h uint64.h taia.h taia.h byte.h roots.h fmt.h \
 iopause.h query.h dns.h uint32.h alloc.h response.h uint32.h cache.h \
 uint32.h uint64.h ndelay.h log.h uint64.h okclient.h droproot.h \
-accesscontrol.h distributedcache.h globals.h
+accesscontrol.h distributedcache.h serverstate.h
 	./compile dnscache.c
 
 dnsfilter: \
@@ -527,10 +527,6 @@ compile getln2.c byte.h getln.h buffer.h stralloc.h gen_alloc.h
 getopt.a: \
 makelib sgetopt.o subgetopt.o
 	./makelib getopt.a sgetopt.o subgetopt.o
-
-globals.o: \
-compile globals.c
-	./compile globals.c
 
 hasdevtcp.h: \
 systype hasdevtcp.h1 hasdevtcp.h2
@@ -820,6 +816,10 @@ ndelay.h socket.h uint16.h droproot.h qlog.h uint16.h response.h \
 uint32.h dns.h stralloc.h gen_alloc.h iopause.h taia.h tai.h uint64.h \
 taia.h
 	./compile server.c
+
+serverstate.o: \
+compile serverstate.c
+	./compile serverstate.c
 
 setup: \
 it install

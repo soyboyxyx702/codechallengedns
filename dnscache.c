@@ -24,7 +24,7 @@
 #include "log.h"
 #include "okclient.h"
 #include "droproot.h"
-#include "globals.h"
+#include "serverstate.h"
 #include "accesscontrol.h"
 #include "distributedcache.h"
 
