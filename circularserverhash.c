@@ -11,6 +11,7 @@
 #include "uint64.h"
 #include "buffer.h"
 
+#define HASH_MODULO 9999
 struct CircularListNode {
   unsigned int hashposition;
   char* ip;
@@ -27,16 +28,19 @@ static pthread_mutex_t hashmutex = PTHREAD_MUTEX_INITIALIZER;
  * Modulo division by a number independent of number of servers in the system
  */
 static unsigned int gethashposition(const char* key, int keylen) {
-  return hashcode(key, keylen) % 9999;
+  return hashcode(key, keylen) % HASH_MODULO;
 }
 
 /*
  * Add servernode to auxillary circular hash list while maintaining sorted circular hash position order
+ * Return 1 on success
+ * Return -1 on failure in the extreme case:
+ * - if there's another server occupying the same hash position
  */
-static void addservertoauxillarylist(struct CircularListNode* servernode) {
+static int addservertoauxillarylist(struct CircularListNode* servernode) {
   if(!headauxillary) {
     headauxillary = servernode;
-    return;
+    return 1;
   }
 
   struct CircularListNode* prev = 0;
@@ -55,6 +59,10 @@ static void addservertoauxillarylist(struct CircularListNode* servernode) {
   }
 
   if(prev) {
+    // In the extreme case, if there is already another server hashed to the same position
+    if(curr && curr->hashposition == servernode->hashposition) {
+      return -1;
+    }
     servernode->next = prev->next;
     prev->next = servernode;
   }
@@ -155,7 +163,15 @@ void addserverstohashring(const char* cacheserverspath) {
         sprintf(temp, "adding IP %s port %d hashposition %d\n", servernode->ip, servernode->port, servernode->hashposition);
         buffer_puts(buffer_2, temp);
         if(servernode) {
-          addservertoauxillarylist(servernode);
+          int loop = 0;
+          /*
+           * This is expected to usually work in 1 iteration, however if there's a hash collision
+           * and there's another server that's hashed to the same location, try a different hash location
+           */
+          while(addservertoauxillarylist(servernode) != 1 && loop < 100) {
+            loop++;
+            servernode->hashposition = (servernode->hashposition + 99) % HASH_MODULO;
+          }
         }
         free(serverentry);
       }
