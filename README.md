@@ -62,17 +62,19 @@ see when I query for `myip.opendns.com`:
 
 Implement this behavior in dnscache.
 
-IMPLEMENTATION
+Implementation:
+
 The approach was to figure out where are we getting the list of DNS servers from.
 By specifying the DNS server that performs the custom behavior of returning public UP
 for myip.opendns.com, as a configuration setting/ environment variable, we return the
 custom DNS server instead of specified DNS servers list at root/@ for myip.opendns.com
 
-CONFIGURATION
-The following entries in run-dnscache.sh
-export CUSTOMDOMAIN=myip.opendns.com
-export CUSTOMDNSDOMAINLEN=18
-export CUSTOMDNS=208.67.222.222
+Configuration:
+
+The following entries in run-dnscache.sh :
+    $ export CUSTOMDOMAIN=myip.opendns.com
+    $ export CUSTOMDNSDOMAINLEN=18
+    $ export CUSTOMDNS=208.67.222.222
 
 
 2. okclient()
@@ -84,7 +86,8 @@ the overhead of which can limit the throughput of a busy server.
 Modify dnscache to perform IP address-based access control without
 using system calls for each DNS request.
 
-IMPLEMENTATION
+Implementation:
+
 Ideally the access control list will be specified in a database and cached by DNS.
 However in order to avoid performing a stat system call on every request, & still be
 able to keep track of access control list, we do so by creating a separate dedicated thread,
@@ -95,10 +98,11 @@ will have a list of authorized IPs.
 
 accesscontrol.c monitors this file for updates in a separate thread.
 
-CONFIGURATION
-The following entries in run-dnscache.sh
-ACCESS_CONTROL_FILE_PATH="ip/accesscontrol.global"
-[ -f root/ip/accesscontrol.global  ] || cp accesscontrol.global root/ip/.
+Configuration:
+
+The following entries in run-dnscache.sh :
+    $ ACCESS_CONTROL_FILE_PATH="ip/accesscontrol.global"
+    $ [ -f root/ip/accesscontrol.global  ] || cp accesscontrol.global root/ip/.
 
 
 
@@ -107,7 +111,8 @@ ACCESS_CONTROL_FILE_PATH="ip/accesscontrol.global"
 
 Modify cache.c to add a method to delete an entry from the cache.
 
-IMPLEMENTATION
+Implementation:
+
 cache_find is a helper method, which will keep looking for a key in the byte array, called by cache_get & cache_delete.
 If an expired copy of the key is found, instead of following the previous behavior and return key to not be found,
 we invalidate the key record, by setting the key field to all 0s. The assumption here being, the real set of keys
@@ -122,10 +127,11 @@ The deleted key marked as invalid will eventually be overwritten.
 it did not make sense to me to move entries around the byte array when a key is being deleted,
 that will be a O(n) time/space operation.).
 
-Test
------
+Testing:
+
 Modified cachetest to test for cache_delete.
-Try out: ./cachetest www.google.com:172.217.3.164 www.google.com www.google.com:delete www.google.com
+Try out :
+    $ ./cachetest www.google.com:172.217.3.164 www.google.com www.google.com:delete www.google.com
 
 key name:delete = indicates key has to be deleted
 NOTE: Have not implemented delete key for Distributed Cache (section 4), make sure you disable
@@ -146,7 +152,8 @@ look forward to seeing the most. If you are short on time we would
 still like to see your thoughts on how you will approach this problem. :-)
 
 
-IMPLEMENTATION
+Implementation:
+
 I have borrowed from consistent hashing to map cache keys to cache server.
 circularserverhash.c monitors cache server list specifying list of cache servers for updates
 and maps servers to a deterministic hash position, regardless of the number of servers.
@@ -162,15 +169,18 @@ within the circular hash space.
 
 cacheclient.c/cacheserver.c are TCP client/servers. This could have been done in UDP too.
 
-CONFIGURATION
+
+Configuration:
+
 The following entry in run-dnscache.sh specifies the list of cache servers
-and whether we are running a distributed cache service or the default one.
-CACHE_SERVERS_LIST_FILE_PATH="cacheservers.list"
-export DISTRIBUTEDCACHE=1
-export DISTRIBUTEDCACHESERVERSFILE=$CACHE_SERVERS_LIST_FILE_PATH
+and whether we are running a distributed cache service or the default one:
+    $ CACHE_SERVERS_LIST_FILE_PATH="cacheservers.list"
+    $ export DISTRIBUTEDCACHE=1
+    $ export DISTRIBUTEDCACHESERVERSFILE=$CACHE_SERVERS_LIST_FILE_PATH
 
 
-TESTING
+Testing:
+
 Make Distributed cache has been enabled in run-dnscache.sh
 
 Start all cache servers specified in root/cacheservers.list
