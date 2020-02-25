@@ -22,6 +22,8 @@
 
 int keepRunning = 1;
 
+// Part 4 - Distributed caching
+
 /*
  * Handle SIGNAL interrupts to gracefully terminate the server
  */

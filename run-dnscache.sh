@@ -12,18 +12,18 @@ cp dnsroots.global root/servers/@
 ACCESS_CONTROL_FILE_PATH="ip/accesscontrol.global"
 CACHE_SERVERS_LIST_FILE_PATH="cacheservers.list"
 
+export ACCESSCONTROL=$ACCESS_CONTROL_FILE_PATH
+export DISTRIBUTEDCACHE=1
+export DISTRIBUTEDCACHESERVERSFILE=$CACHE_SERVERS_LIST_FILE_PATH
 export ROOT=./root
 export IP=127.0.0.1
 export IPSEND=0.0.0.0
-export DISTRIBUTEDCACHE=1
-export DISTRIBUTEDCACHESERVERSFILE=$CACHE_SERVERS_LIST_FILE_PATH
 export CACHESIZE=1024576
 export CUSTOMDOMAIN=myip.opendns.com
 # domain length when encoded 4myip7opendns3com + null char
 export CUSTOMDNSDOMAINLEN=18
 export CUSTOMDNS=208.67.222.222
 export GID=0
-export ACCESSCONTROL=$ACCESS_CONTROL_FILE_PATH
 
 # UID is read-only in bash, so we set it with env.
 #

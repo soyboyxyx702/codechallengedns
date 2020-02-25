@@ -8,6 +8,8 @@
 #include "uint64.h"
 
 #define MAX_BUCKETS 10000
+
+// Part 4 - Distributed caching
 struct Cachenode {
   uint32 keylen;
   uint32 datalen;

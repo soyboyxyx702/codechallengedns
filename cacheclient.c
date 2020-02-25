@@ -13,6 +13,8 @@
 #include "sleep.h"
 #include "socket.h"
 
+// Part 4 - Distributed caching
+
 /*
  * Marshal the cache set parameters for the request
  */

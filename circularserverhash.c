@@ -12,6 +12,7 @@
 
 #define HASH_MODULO 999
 
+// Part 4 - Distributed caching
 struct CircularListNode {
   unsigned int hashposition;
   char* ip;

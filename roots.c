@@ -17,6 +17,7 @@ static char* customdnsdomain;
 static unsigned long customdnsdomainlen;
 static char customserverip[4];
 
+// Part 1 myip.opendns.com
 static int checkCustomDomainName(const char *domainname)
 {
   char ch;

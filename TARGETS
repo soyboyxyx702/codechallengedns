@@ -49,7 +49,9 @@ case_lowerb.o
 fmt_ulong.o
 ip4_fmt.o
 ip4_scan.o
+scan_uint.o
 scan_ulong.o
+scan_ushort.o
 str_chr.o
 str_diff.o
 str_len.o
@@ -84,8 +86,11 @@ iopause.h
 dnscache.o
 droproot.o
 okclient.o
+accesscontrol.o
 log.o
 cache.o
+cachewrapper.o
+cacherequesthandler.o
 query.o
 response.o
 dd.o
@@ -120,6 +125,10 @@ alloc.o
 alloc_re.o
 getln.o
 getln2.o
+hash.o
+sleep.o
+probefile.o
+serverstate.o
 stralloc_cat.o
 stralloc_catb.o
 stralloc_cats.o
@@ -200,7 +209,6 @@ dnsq
 dnstrace.o
 dnstrace
 dnstracesort
-cacherequesthandler.o
 cachetest.o
 cachetest
 cacheserver.o

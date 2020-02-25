@@ -14,6 +14,9 @@
 #include "uint64.h"
 
 #define MAX_BUCKETS 10000
+
+// Part 4 - okclient avoid stat system call on every request
+
 struct IPnode {
   char *ip;
   struct IPnode* next;

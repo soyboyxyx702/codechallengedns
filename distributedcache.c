@@ -16,6 +16,8 @@ static int initialized = 0;
 static char* cacheserverspath = 0;
 static time_t lastmodificationtime = 0;
 
+// Part 4 - Distributed caching
+
 /*
  * Extern entry point to set cache record for a given key
  */

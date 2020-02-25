@@ -3,7 +3,7 @@ Programming Exercises
 
 Setup
 ------
-
+Compiled with POSIX threads and crypto libraries (-lpthread -lcrypto)
 
 The code for these exercises originally came from:
 > http://cr.yp.to/djbdns/djbdns-1.05.tar.gz
@@ -62,6 +62,22 @@ see when I query for `myip.opendns.com`:
 
 Implement this behavior in dnscache.
 
+Implementation
+--------------
+The approach was to figure out where are we getting the list of DNS servers from.
+By specifying the DNS server that performs the custom behavior of returning public UP
+for myip.opendns.com, as a configuration setting/ environment variable, we return the
+custom DNS server instead of specified DNS servers list at root/@ for myip.opendns.com
+
+Configuration
+-------------
+The following entries in run-dnscache.sh
+export CUSTOMDOMAIN=myip.opendns.com
+# domain length when encoded 4myip7opendns3com + null char
+export CUSTOMDNSDOMAINLEN=18
+export CUSTOMDNS=208.67.222.222
+
+
 2. okclient()
 ----------------
 
@@ -71,10 +87,56 @@ the overhead of which can limit the throughput of a busy server.
 Modify dnscache to perform IP address-based access control without
 using system calls for each DNS request.
 
+Implementation
+---------------
+Ideally the access control list will be specified in a database and cached by DNS.
+However in order to avoid performing a stat system call on every request, & still be
+able to keep track of access control list, we do so by creating a separate dedicated thread,
+whose job is to simply perform a stat call on regular intervals and if access control list has
+been modified, then take the appropriate action.
+Also I have done away with file name approach for access control, instead a new file 'accesscontrol.global'
+will have a list of authorized IPs.
+
+accesscontrol.c monitors this file for updates in a separate thread.
+
+Configuration
+-------------
+The following entries in run-dnscache.sh
+ACCESS_CONTROL_FILE_PATH="ip/accesscontrol.global"
+[ -f root/ip/accesscontrol.global  ] || cp accesscontrol.global root/ip/.
+
+
+
 3. Cache Delete
 -----------------
 
 Modify cache.c to add a method to delete an entry from the cache.
+
+Implementation
+---------------
+cache_find is a helper method, which will keep looking for a key in the byte array, called by cache_get & cache_delete.
+If an expired copy of the key is found, instead of following the previous behavior and return key to not be found,
+we invalidate the key record, by setting the key field to all 0s. The assumption here being, the real set of keys
+will not be taking a value of all 0s. And we keep looking in the byte array if there are other versions of the key.
+
+This will also modify how cache_get, as the search for a key does not terminate just because we find an expired copy of the same.
+
+As far as cache_delete goes, once a valid copy of the key is found, set its key field to all 0s.
+The deleted key marked as invalid will eventually be overwritten.
+
+(Alternatively we could simply expire the key to mark it as deleted.
+it did not make sense to me to move entries around the byte array when a key is being deleted,
+that will be a O(n) time/space operation.).
+
+Test
+-----
+Modified cachetest to test for cache_delete.
+Try out: ./cachetest www.google.com:172.217.3.164 www.google.com www.google.com:delete www.google.com
+
+key name:delete = indicates key has to be deleted
+NOTE: Have not implemented delete key for Distributed Cache (section 4), make sure you disable
+distributed caching in run-dnscache.sh
+export DISTRIBUTEDCACHE=0  # set this to 0
 
 4. New Features
 ----------------
@@ -87,5 +149,48 @@ there is a better way to structure the contents of the cache in a
 hierarchy of sorts.  This is usually the most interesting and fun of
 the problems in this challenge;  we know this question is the one we
 look forward to seeing the most. If you are short on time we would
-still like to see your thoughts on how you'd approach this problem. :-)
+still like to see your thoughts on how you will approach this problem. :-)
 
+
+Implementation
+---------------
+I have borrowed from consistent hashing to map cache keys to cache server.
+circularserverhash.c monitors cache server list specifying list of cache servers for updates
+and maps servers to a deterministic hash position, regardless of the number of servers.
+The cache keys are mapped to a deterministic hash position too, independent of number of servers.
+Thus less keys will have to be remapped if the number of servers change, instead of rehashing
+the whole key space in case of conventional hashing.
+
+In production, list of cache servers will probably be maintained in a DB and cached somewhere and
+there will be separate health periodic checks to take faulty cache servers out of the cluster.
+
+Also, an enhancement to circular hashing could also be mapping a given server to multiple virtual positions
+within the circular hash space.
+
+cacheclient.c/cacheserver.c are TCP client/servers. This could have been done in UDP too.
+
+Configuration
+-------------
+The following entry in run-dnscache.sh specifies the list of cache servers
+and whether we are running a distributed cache service or the default one.
+CACHE_SERVERS_LIST_FILE_PATH="cacheservers.list"
+export DISTRIBUTEDCACHE=1
+export DISTRIBUTEDCACHESERVERSFILE=$CACHE_SERVERS_LIST_FILE_PATH
+
+
+Testing
+-------
+- Make Distributed cache has been enabled in run-dnscache.sh
+
+- Start all cache servers specified in root/cacheservers.list
+	$ ./cacheserver 127.0.0.1 6001
+	$ ./cacheserver 127.0.0.1 6002
+	$ ./cacheserver 127.0.0.1 6003
+	$ ./cacheserver 127.0.0.1 6004
+
+- Start the dnscache 
+	$ sudo ./run-dnscache.sh
+
+- Test out with DNS requests
+	$ dig @127.0.0.1 www.facebook.com
+	$ dig @127.0.0.1 www.google.com
