@@ -107,6 +107,10 @@ The following entries in run-dnscache.sh :
     $ [ -f root/ip/accesscontrol.global  ] || cp accesscontrol.global root/ip/.
 
 
+Testing:
+
+Test by removing/adding IPs from `root/ip/accesscontrol.global` and check if `dnscache` accepts/turns down
+requests for those IPs.
 
 3. Cache Delete
 -----------------
