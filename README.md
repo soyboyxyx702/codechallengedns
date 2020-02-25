@@ -179,7 +179,8 @@ within the circular hash space.
 Configuration:
 
 The following entry in run-dnscache.sh specifies the list of cache servers
-and whether we are running a distributed cache service or the default one:
+and whether we are running a distributed cache service or the default one :
+
     $ CACHE_SERVERS_LIST_FILE_PATH="cacheservers.list"
     $ export DISTRIBUTEDCACHE=1
     $ export DISTRIBUTEDCACHESERVERSFILE=$CACHE_SERVERS_LIST_FILE_PATH
@@ -196,9 +197,11 @@ Start all cache servers specified in `root/cacheservers.list`
     $ ./cacheserver 127.0.0.1 6003
     $ ./cacheserver 127.0.0.1 6004
 
-Start the dnscache 
+Start the dnscache :
+
     $ sudo ./run-dnscache.sh
 
-Test out with DNS requests
+Test out with DNS requests :
+
     $ dig @127.0.0.1 www.facebook.com
     $ dig @127.0.0.1 www.google.com
