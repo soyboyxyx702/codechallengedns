@@ -25,12 +25,15 @@ struct Hashbucket {
 static struct Hashbucket h[MAX_BUCKETS];
 static int initialized = 0;
 
+/*
+ * Find hash bucket for the key and add to the same
+ */
 static void addtocache(char* key, char* data, uint32 keylen, const uint32 datalen, uint32 ttl) {
   if(!ttl) {
     return;
   }
-  if (ttl > 604800) {
-    ttl = 604800;
+  if (ttl > MAXTTL) {
+    ttl = MAXTTL;
   }
   uint64 hashval = hashcode(key, keylen);
   int bucketnum = hashval % MAX_BUCKETS;
@@ -54,6 +57,7 @@ static void addtocache(char* key, char* data, uint32 keylen, const uint32 datale
   newnode->expiry = expire.x;
   newnode->next = 0;
 
+  // Traverse through the appropriate hash bucket and delete older entries for the key
   struct Cachenode* curr = h[bucketnum].begin;
   struct Cachenode* prev = 0;
   while(curr) {
@@ -81,15 +85,13 @@ static void addtocache(char* key, char* data, uint32 keylen, const uint32 datale
 }
 
 /*
- * Request format SET
- * 1-byte req type (set); 4-byte keylen; 4-byte datalen; 4-byte ttl; key; data
  * Request format GET
  * 1-byte req type (get); 4-byte keylen; key
  * Response format GET
  * 4-byte datalen; 4-byte ttl; data;
  */
 
-static void cache_get(const char* buffer, const int reqlen, const int keylen, char** response, int* responselen) {
+static void cachegetentry(const char* buffer, const int reqlen, const uint32 keylen, char** response, int* responselen) {
   if(reqlen - 5 < keylen) {
     // Invalid request, expecing keylen bytes more
     return;
@@ -98,7 +100,7 @@ static void cache_get(const char* buffer, const int reqlen, const int keylen, ch
   const char *key = buffer + 5;
   uint64 hashval = hashcode(key, keylen);
   int bucketnum = hashval % MAX_BUCKETS;
-
+  
   struct Cachenode* curr = h[bucketnum].begin;
   struct Cachenode* prev = 0;
   struct tai now;
@@ -144,8 +146,8 @@ static void cache_get(const char* buffer, const int reqlen, const int keylen, ch
     expire.x = curr->expiry;
     tai_sub(&expire, &expire, &now);
     uint32 ttl = tai_approx(&expire);
-    if(ttl > 604800) {
-      ttl = 604800;
+    if(ttl > MAXTTL) {
+      ttl = MAXTTL;
     }
 
     uint32_pack(*response, curr->datalen);
@@ -165,7 +167,11 @@ static void cache_get(const char* buffer, const int reqlen, const int keylen, ch
   }
 }
 
-static void cache_set(const char* buffer, const int reqlen, const int keylen) {
+/*
+ * Request format SET
+ * 1-byte req type (set); 4-byte keylen; 4-byte datalen; 4-byte ttl; key; data
+ */
+static void cachesetentry(const char* buffer, const int reqlen, const uint32 keylen) {
   if(reqlen - 5 < 4) {
     // Invalid request, expecing 4 bytes of datalen
     return;
@@ -194,12 +200,19 @@ static void cache_set(const char* buffer, const int reqlen, const int keylen) {
   char* data = alloc(datalen);
   if(!data) {
     // could not allocate memory for data
+    free(key);
     return;
   }
+
+  byte_copy(key, keylen, buffer + 13);
+  byte_copy(data, datalen, buffer + keylen + 13);
 
   addtocache(key, data, keylen, datalen, ttl);
 }
 
+ /*
+  * Forward the request to the appropriate handler depending on request type (GET/SET)
+  */
 void cacherequesthandler(char* buffer, int reqlen, char** response, int* responselen) {
   if(!buffer || reqlen < 5) {
     return;
@@ -210,18 +223,20 @@ void cacherequesthandler(char* buffer, int reqlen, char** response, int* respons
   uint32 keylen;
   uint32_unpack(buffer + 1, &keylen);
   if(keylen > DISTRIBUTED_MAXKEYLEN) {
-    // Invalid request, key/data longer than the maximum length allowed
     return;
   }
   if(cacheoperation == CACHE_GET) {
-    cache_get(buffer, reqlen, keylen, response, responselen);
+    cachegetentry(buffer, reqlen, keylen, response, responselen);
   }
   else if(cacheoperation == CACHE_SET) {
-    cache_set(buffer, reqlen,  keylen);
+    cachesetentry(buffer, reqlen,  keylen);
   }
 }
 
-void cacheinit() {
+ /*
+  * One time initialization of all hash buckets to empty
+  */
+void cacherequesthandlerinit() {
   if(initialized) {
     return;
   }

@@ -1,7 +1,8 @@
 #ifndef SLEEP_H
 #define SLEEP_H
 
-extern void shortsleep(int);
+extern void sleepinmilliseconds(int);
+extern void sleepinseconds(int);
 
 #endif
 

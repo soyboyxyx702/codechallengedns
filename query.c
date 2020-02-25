@@ -2,7 +2,7 @@
 #include "roots.h"
 #include "log.h"
 #include "case.h"
-#include "cache.h"
+#include "cachewrapper.h"
 #include "byte.h"
 #include "dns.h"
 #include "uint64.h"
@@ -32,7 +32,7 @@ static void cachegeneric(const char type[2],const char *d,const char *data,unsig
   byte_copy(key + 2,len,d);
   case_lowerb(key + 2,len);
 
-  cache_set(key,len + 2,data,datalen,ttl);
+  cache_set_wrapper(key,len + 2,data,datalen,ttl);
 }
 
 static char save_buf[8192];
@@ -246,14 +246,14 @@ static int doit(struct query *z,int state)
     byte_copy(key,2,DNS_T_ANY);
     byte_copy(key + 2,dlen,d);
     case_lowerb(key + 2,dlen);
-    cached = cache_get(key,dlen + 2,&cachedlen,&ttl);
+    cached = cache_get_wrapper(key,dlen + 2,&cachedlen,&ttl);
     if (cached) {
       log_cachednxdomain(d);
       goto NXDOMAIN;
     }
 
     byte_copy(key,2,DNS_T_CNAME);
-    cached = cache_get(key,dlen + 2,&cachedlen,&ttl);
+    cached = cache_get_wrapper(key,dlen + 2,&cachedlen,&ttl);
     if (cached) {
       if (typematch(DNS_T_CNAME,dtype)) {
         log_cachedanswer(d,DNS_T_CNAME);
@@ -269,7 +269,7 @@ static int doit(struct query *z,int state)
 
     if (typematch(DNS_T_NS,dtype)) {
       byte_copy(key,2,DNS_T_NS);
-      cached = cache_get(key,dlen + 2,&cachedlen,&ttl);
+      cached = cache_get_wrapper(key,dlen + 2,&cachedlen,&ttl);
       if (cached && (cachedlen || byte_diff(dtype,2,DNS_T_ANY))) {
 	log_cachedanswer(d,DNS_T_NS);
 	if (!rqa(z)) goto DIE;
@@ -286,7 +286,7 @@ static int doit(struct query *z,int state)
 
     if (typematch(DNS_T_PTR,dtype)) {
       byte_copy(key,2,DNS_T_PTR);
-      cached = cache_get(key,dlen + 2,&cachedlen,&ttl);
+      cached = cache_get_wrapper(key,dlen + 2,&cachedlen,&ttl);
       if (cached && (cachedlen || byte_diff(dtype,2,DNS_T_ANY))) {
 	log_cachedanswer(d,DNS_T_PTR);
 	if (!rqa(z)) goto DIE;
@@ -303,7 +303,7 @@ static int doit(struct query *z,int state)
 
     if (typematch(DNS_T_MX,dtype)) {
       byte_copy(key,2,DNS_T_MX);
-      cached = cache_get(key,dlen + 2,&cachedlen,&ttl);
+      cached = cache_get_wrapper(key,dlen + 2,&cachedlen,&ttl);
       if (cached && (cachedlen || byte_diff(dtype,2,DNS_T_ANY))) {
 	log_cachedanswer(d,DNS_T_MX);
 	if (!rqa(z)) goto DIE;
@@ -323,7 +323,7 @@ static int doit(struct query *z,int state)
 
     if (typematch(DNS_T_A,dtype)) {
       byte_copy(key,2,DNS_T_A);
-      cached = cache_get(key,dlen + 2,&cachedlen,&ttl);
+      cached = cache_get_wrapper(key,dlen + 2,&cachedlen,&ttl);
       if (cached && (cachedlen || byte_diff(dtype,2,DNS_T_ANY))) {
 	if (z->level) {
 	  log_cachedanswer(d,DNS_T_A);
@@ -355,7 +355,7 @@ static int doit(struct query *z,int state)
 
     if (!typematch(DNS_T_ANY,dtype) && !typematch(DNS_T_AXFR,dtype) && !typematch(DNS_T_CNAME,dtype) && !typematch(DNS_T_NS,dtype) && !typematch(DNS_T_PTR,dtype) && !typematch(DNS_T_A,dtype) && !typematch(DNS_T_MX,dtype)) {
       byte_copy(key,2,dtype);
-      cached = cache_get(key,dlen + 2,&cachedlen,&ttl);
+      cached = cache_get_wrapper(key,dlen + 2,&cachedlen,&ttl);
       if (cached && (cachedlen || byte_diff(dtype,2,DNS_T_ANY))) {
 	log_cachedanswer(d,dtype);
 	if (!rqa(z)) goto DIE;
@@ -390,7 +390,7 @@ static int doit(struct query *z,int state)
         byte_copy(key,2,DNS_T_NS);
         byte_copy(key + 2,dlen,d);
         case_lowerb(key + 2,dlen);
-        cached = cache_get(key,dlen + 2,&cachedlen,&ttl);
+        cached = cache_get_wrapper(key,dlen + 2,&cachedlen,&ttl);
         if (cached && cachedlen) {
 	  z->control[z->level] = d;
           byte_zero(z->servers[z->level],64);

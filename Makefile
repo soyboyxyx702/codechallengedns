@@ -159,6 +159,10 @@ cache.o: \
 compile cache.c alloc.h byte.h uint32.h exit.h tai.h uint64.h cache.h distributedcache.h
 	./compile cache.c
 
+cacheclient.o: \
+compile cacheclient.c alloc.h byte.h cacheheader.h sleep.h socket.h uint16.h uint32.h 
+	./compile cacheclient.c
+
 cacherequesthandler.o: \
 compile cacherequesthandler.c alloc.h byte.h cacheheader.h hash.h \
 tai.h uint32.h uint64.h
@@ -171,22 +175,27 @@ alloc.a buffer.a byte.a libtai.a unix.a
 	alloc.a buffer.a byte.a libtai.a unix.a
 
 cacheserver.o: \
-compile cacheserver.c alloc.h byte.h cacherequesthandler.h exit.h \
+compile cacheserver.c alloc.h byte.h cacheheader.h cacherequesthandler.h exit.h \
 ip4.h ndelay.h scan.h socket.h strerr.h
 	./compile cacheserver.c
 
 cachetest: \
-load cachetest.o cache.o circularserverhash.o distributedcache.o \
+load cachetest.o cache.o cacheclient.o cachewrapper.o \
+circularserverhash.o distributedcache.o \
 hash.o probefile.o serverstate.o sleep.o \
 libtai.a buffer.a alloc.a unix.a byte.a
-	./load cachetest cache.o circularserverhash.o distributedcache.o \
+	./load cachetest cache.o cacheclient.o cachewrapper.o \
+	circularserverhash.o distributedcache.o \
 	hash.o probefile.o serverstate.o sleep.o \
 	libtai.a buffer.a alloc.a unix.a byte.a 
 
 cachetest.o: \
-compile cachetest.c buffer.h circularserverhash.h distributedcache.h \
-exit.h cache.h uint32.h uint64.h serverstate.h str.h
+compile cachetest.c buffer.h exit.h cachewrapper.h str.h
 	./compile cachetest.c
+
+cachewrapper.o: \
+compile cachewrapper.c cache.h distributedcache.h uint16.h uint32.h 
+	./compile cachewrapper.c
 
 case_diffb.o: \
 compile case_diffb.c case.h
@@ -238,7 +247,7 @@ warn-auto.sh choose.sh conf-home
 
 circularserverhash.o: \
 compile circularserverhash.c alloc.h byte.h circularserverhash.h \
-hash.h scan.h serverstate.h str.h uint64.h
+hash.h scan.h serverstate.h str.h uint16.h uint64.h
 	./compile circularserverhash.c
 
 compile: \
@@ -258,7 +267,8 @@ choose compile trydrent.c direntry.h1 direntry.h2
 	./choose c trydrent direntry.h1 direntry.h2 > direntry.h
 
 distributedcache.o: \
-compile distributedcache.c alloc.h byte.h circularserverhash.h distributedcache.h \
+compile distributedcache.c alloc.h byte.h \
+cacheclient.h cacheheader.h circularserverhash.h distributedcache.h \
 probefile.h serverstate.h sleep.h str.h
 	./compile distributedcache.c
 
@@ -355,16 +365,16 @@ stralloc.h iopause.h taia.h tai.h uint64.h taia.h
 	./compile dns_txt.c
 
 dnscache: \
-load dnscache.o droproot.o okclient.o log.o cache.o query.o \
+load dnscache.o droproot.o okclient.o log.o cache.o cachewrapper.o query.o \
 response.o dd.o roots.o iopause.o prot.o accesscontrol.o \
-serverstate.o distributedcache.o circularserverhash.o \
+serverstate.o cacheclient.o distributedcache.o circularserverhash.o \
 sleep.o hash.o probefile.o \
 dns.a env.a alloc.a buffer.a \
 libtai.a unix.a byte.a socket.lib
-	./load dnscache droproot.o okclient.o log.o cache.o \
+	./load dnscache droproot.o okclient.o log.o cache.o cachewrapper.o \
 	query.o response.o dd.o roots.o iopause.o prot.o \
-	accesscontrol.o serverstate.o distributedcache.o circularserverhash.o \
-	sleep.o hash.o probefile.o \
+	accesscontrol.o serverstate.o cacheclient.o distributedcache.o \
+	circularserverhash.o sleep.o hash.o probefile.o \
 	dns.a env.a alloc.a buffer.a libtai.a unix.a byte.a  `cat \
 	socket.lib`
 
@@ -384,7 +394,7 @@ dnscache.o: \
 compile dnscache.c env.h exit.h scan.h strerr.h error.h ip4.h \
 uint16.h uint64.h socket.h uint16.h dns.h stralloc.h gen_alloc.h \
 iopause.h taia.h tai.h uint64.h taia.h taia.h byte.h roots.h fmt.h \
-iopause.h query.h dns.h uint32.h alloc.h response.h uint32.h cache.h \
+iopause.h query.h dns.h uint32.h alloc.h response.h uint32.h cachewrapper.h \
 uint32.h uint64.h ndelay.h log.h uint64.h okclient.h droproot.h \
 accesscontrol.h distributedcache.h serverstate.h
 	./compile dnscache.c
@@ -740,7 +750,7 @@ compile qlog.c buffer.h qlog.h uint16.h
 	./compile qlog.c
 
 query.o: \
-compile query.c error.h roots.h log.h uint64.h case.h cache.h \
+compile query.c error.h roots.h log.h uint64.h case.h cachewrapper.h \
 uint32.h uint64.h byte.h dns.h stralloc.h gen_alloc.h iopause.h \
 taia.h tai.h uint64.h taia.h uint64.h uint32.h uint16.h dd.h alloc.h \
 response.h uint32.h query.h dns.h uint32.h

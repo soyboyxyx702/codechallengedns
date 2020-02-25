@@ -1,6 +1,6 @@
 #include "buffer.h"
 #include "exit.h"
-#include "cache.h"
+#include "cachewrapper.h"
 #include "str.h"
 
 /*
@@ -14,7 +14,8 @@ int main(int argc,char **argv)
   unsigned int u;
   uint32 ttl;
 
-  if (!cache_init(0, 200, 0)) _exit(111);
+  // if (!cache_init(0, 200, 0)) _exit(111);
+  if (!cache_init_wrapper(1, 0, "cacheservers.list")) _exit(111);
 
   if (*argv) ++argv;
 
@@ -25,20 +26,20 @@ int main(int argc,char **argv)
         buffer_puts(buffer_1, "delete ");
         buffer_puts(buffer_1, x);
         buffer_puts(buffer_1,"\n");
-        cache_delete(x, i);
+        cache_delete_wrapper(x, i);
       }
       else {
         buffer_puts(buffer_1, "set ");
         buffer_puts(buffer_1, x);
         buffer_puts(buffer_1,"\n");
-        cache_set(x, i, x + i + 1, str_len(x) - i - 1, 86400);
+        cache_set_wrapper(x, i, x + i + 1, str_len(x) - i - 1, 86400);
       }
     }
     else {
       buffer_puts(buffer_1, "get ");
       buffer_puts(buffer_1, x);
       buffer_puts(buffer_1, " ");
-      y = cache_get(x,i,&u,&ttl);
+      y = cache_get_wrapper(x,i,&u,&ttl);
       if (y)
         buffer_put(buffer_1, y, u);
       buffer_puts(buffer_1,"\n");

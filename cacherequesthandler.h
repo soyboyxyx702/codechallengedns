@@ -2,6 +2,6 @@
 #define CACHEREQHANDLER_H
 
 extern void cacherequesthandler(const char*, const int, char**, int*);
-extern void cacheinit();
+extern void cacherequesthandlerinit();
 
 #endif

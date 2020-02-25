@@ -6,6 +6,7 @@
 
 #include "alloc.h"
 #include "byte.h"
+#include "cacheheader.h"
 #include "cacherequesthandler.h"
 #include "exit.h"
 #include "ip4.h"
@@ -14,21 +15,26 @@
 #include "socket.h"
 #include "strerr.h"
 
-#define MAXBUF 10000000
 #define MAX_EPOLL_EVENTS 1000
-
 #define FATAL "cacheserver: fatal: "
 #define ERROR "cacheserver: error: "
 #define SOMAXLISTENQUEUE 20
 
 int keepRunning = 1;
 
+/*
+ * Handle SIGNAL interrupts to gracefully terminate the server
+ */
 static void sighandler(int sig) {
   if(sig == SIGINT) {
     keepRunning = 0;
   }
 }
 
+/*
+ * Create a TCP socket listening to the server address to which it's bound
+ * Return sockfd if successful, -1 in case of error
+ */
 static int initiateserversockfd(char ip[4], uint16 port) {
   int sockfd = socket_tcp();
   if(sockfd == -1) {
@@ -50,50 +56,56 @@ static int initiateserversockfd(char ip[4], uint16 port) {
   return sockfd;
 }
 
+/*
+ * Add the sock fd to be monitored for events by epoll
+ * Return 1 if successful, -1 in case of error
+ */
 static int addfdtoepoll(int epollfd, int sockfd) {
   struct epoll_event event;
 
   event.data.fd = sockfd;
   event.events = EPOLLIN;
   if(epoll_ctl(epollfd, EPOLL_CTL_ADD, sockfd, &event) == -1) {
-    strerr_die2sys(111, ERROR, "unable to add fd to epoll: ");
     return -1;
   }
 
   return 1;
 }
 
+/*
+ * Remove the sock fd from epoll monitoring pool
+ * Return 1 if successful, -1 in case of error
+ */
 static int removefdfromepoll(int epollfd, int sockfd) {
-  struct epoll_event event;
-
-  event.data.fd = sockfd;
-  event.events = EPOLLIN;
   if(epoll_ctl(epollfd, EPOLL_CTL_DEL, sockfd, 0) == -1) {
-    strerr_die2sys(111, ERROR,"unable to remove fd from epoll: ");
     return -1;
   }
 
   return 1;
 }
 
+/*
+ * Forward user request to be handled
+ */
 static void handlerequest(int sockfd, char** response, int* responselen) {
   int numreceived = 0;
-  char buffer[MAXBUF];
-  while(numreceived < MAXBUF) {
-    int ret = recv(sockfd, buffer + numreceived, MAXBUF - numreceived, 0);
-    if(ret == 0) {
-      // Client has closed the connection, return
-      return;
-    }
-    if(ret < 0) {
-      break;
-    }
-    numreceived += ret;
+  char buffer[MAXSOBUF];
+  int ret = recv(sockfd, buffer, MAXSOBUF, 0);
+  if(ret <= 0) {
+    // 0 signifies TCP connection has been closed by the client
+    return;
   }
 
-  cacherequesthandler(buffer, numreceived, response, responselen);
+  numreceived += ret;
+
+  if(numreceived > 0) {
+    cacherequesthandler(buffer, numreceived, response, responselen);
+  }
 }
 
+/*
+ * Send cache request response to the user
+ */
 static void sendresponse(int sockfd, char* response, int responselen) {
   int numsent = 0;
   while(numsent < responselen) {
@@ -142,7 +154,7 @@ static void createeventloop(int serverfd) {
             strerr_die2x(111, ERROR, "Unable to accept new connection ");
           }
 
-          socket_tryreservein(newfd, MAXBUF);
+          socket_tryreservein(newfd, MAXSOBUF);
 
           if(ndelay_on(newfd) == -1 || addfdtoepoll(epollfd, newfd) == -1) {
             close(newfd);
@@ -194,7 +206,7 @@ int main(int argc, char **argv) {
   act.sa_handler = sighandler;
   sigaction(SIGINT, &act, 0);
 
-  cacheinit();
+  cacherequesthandlerinit();
 
   createeventloop(serverfd);
 

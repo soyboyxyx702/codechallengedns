@@ -9,16 +9,20 @@
 #include "scan.h"
 #include "str.h"
 #include "uint64.h"
-#include "buffer.h"
 
-#define HASH_MODULO 9999
+#define HASH_MODULO 999
+
 struct CircularListNode {
   unsigned int hashposition;
   char* ip;
-  unsigned int port;
+  uint16 port;
   struct CircularListNode* next;
 };
 
+/*
+ * Maintain two lists, auxillary to perform background updates to server list
+ * Then quickly switch with the main list to keep critical section small
+ */
 static struct CircularListNode* head = 0;
 static struct CircularListNode* headauxillary = 0;
 
@@ -72,6 +76,11 @@ static int addservertoauxillarylist(struct CircularListNode* servernode) {
   }
 }
 
+/*
+ * Return the closest (earliest) server node with hashed location >= hashed location of key
+ * Request goes to the very first node, if we have completed a circle
+ * i.e. there's no server node with hashed location >= hashed location of key
+ */
 static struct CircularListNode* getnewservernode(const char *serverentry) {
   if(!serverentry) {
     return 0;
@@ -98,7 +107,7 @@ static struct CircularListNode* getnewservernode(const char *serverentry) {
   byte_copy(newnode->ip, pos, serverentry);
   newnode->ip[pos] = 0;
   
-  scan_uint(serverentry + pos + 1, &(newnode->port));
+  scan_ushort(serverentry + pos + 1, &(newnode->port));
   if(newnode->port < 1024 || newnode->port > 65535) {
     // Reserved or out of range port number
     alloc_free(newnode->ip);
@@ -110,6 +119,10 @@ static struct CircularListNode* getnewservernode(const char *serverentry) {
   return newnode;
 }
 
+/*
+ * Move entries from auxillary list to main list
+ * Accesses critical section
+ */
 static void moveentriestomaincircularlist() {
   /*
    * Critical section
@@ -159,9 +172,6 @@ void addserverstohashring(const char* cacheserverspath) {
           serverentry[ret - 1] = '\0';
         }
         struct CircularListNode* servernode = getnewservernode(serverentry);
-        char temp[1024];
-        sprintf(temp, "adding IP %s port %d hashposition %d\n", servernode->ip, servernode->port, servernode->hashposition);
-        buffer_puts(buffer_2, temp);
         if(servernode) {
           int loop = 0;
           /*
@@ -189,15 +199,11 @@ void addserverstohashring(const char* cacheserverspath) {
  * Return 1 on success, -1 on failure and set ip and port numbers to the server that should handle the key
  * The memory area pointed to by IP must be freed by the caller
  */
-int getserverforkey(const char* key, const int keylen, char** ip, unsigned int* port) {
+int getserverforkey(const char* key, const int keylen, char** ip, uint16* port) {
   if(!key || !port) {
     return -1;
   }
   int hashposition = gethashposition(key, keylen);
-
-  char temp[1024];
-  sprintf(temp, "hashcode for key %lu %d\n", hashcode(key, keylen), hashposition);
-  buffer_puts(buffer_2, temp);
 
   /*
    * Critical section
@@ -234,7 +240,5 @@ int getserverforkey(const char* key, const int keylen, char** ip, unsigned int* 
   *port = curr->port;
   pthread_mutex_unlock(&hashmutex);
 
-  sprintf(temp, "selecting server ip %s port %d\n", *ip, *port);
-  buffer_puts(buffer_2, temp);
   return 1;
 }

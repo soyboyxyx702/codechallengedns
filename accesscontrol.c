@@ -211,7 +211,7 @@ void* updateAccessControl(void *dummyparam) {
     return 0;
   }
   while(keepRunning == 1) {
-    shortsleep(2);
+    sleepinseconds(2);
     if(probefile(accesscontrolpath, &lastmodificationtime)) {
       getUpdatedAccessControlList();
     }

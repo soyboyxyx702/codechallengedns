@@ -1,7 +1,6 @@
 #include "alloc.h"
 #include "byte.h"
 #include "cache.h"
-#include "distributedcache.h"
 #include "exit.h"
 #include "tai.h"
 #include "uint32.h"
@@ -15,8 +14,6 @@ static uint32 writer;
 static uint32 oldest;
 static uint32 unused;
 static uint32 notfound;
-
-static uint32 usedistributedcache;
 
 /*
 100 <= size <= 1000000000.
@@ -149,10 +146,6 @@ static uint32 cache_find(const char *key,unsigned int keylen) {
 }
 
 void cache_delete(const char *key, unsigned int keylen) {
-  if(usedistributedcache) {
-    return;
-  }
-
   uint32 pos;
 
   pos = cache_find(key, keylen);
@@ -166,10 +159,6 @@ void cache_delete(const char *key, unsigned int keylen) {
 
 char *cache_get(const char *key, unsigned int keylen, unsigned int *datalen, uint32 *ttl)
 {
-  if(usedistributedcache) {
-    return distributed_cache_get(key, keylen, datalen, ttl);
-  }
-
   struct tai expire;
   struct tai now;
   uint32 pos;
@@ -203,10 +192,6 @@ char *cache_get(const char *key, unsigned int keylen, unsigned int *datalen, uin
 
 void cache_set(const char *key,unsigned int keylen,const char *data,unsigned int datalen,uint32 ttl)
 {
-  if(usedistributedcache) {
-    return distributed_cache_set(key, keylen, data, datalen, ttl);
-  }
-
   struct tai now;
   struct tai expire;
   unsigned int entrylen;
@@ -275,13 +260,8 @@ void cache_set(const char *key,unsigned int keylen,const char *data,unsigned int
   cache_motion += entrylen;
 }
 
-int cache_init(unsigned int distributedcache, unsigned int cachesize, const char* cacheserversfile)
+int cache_init(unsigned int cachesize)
 {
-  usedistributedcache = distributedcache;
-  if(usedistributedcache) {
-    return distributed_cache_init(cacheserversfile);
-  }
-
   if (x) {
     alloc_free(x);
     x = 0;

@@ -19,7 +19,7 @@
 #include "query.h"
 #include "alloc.h"
 #include "response.h"
-#include "cache.h"
+#include "cachewrapper.h"
 #include "ndelay.h"
 #include "log.h"
 #include "okclient.h"
@@ -459,8 +459,8 @@ int main()
     if (!cacheserverspath)
       strerr_die2x(111,FATAL,"$DISTRIBUTEDCACHESERVERSFILE not set");
   }
-  if (!cache_init(distributedcache, cachesize, cacheserverspath))
-    strerr_die2x(111,FATAL,"cache initialization failed");
+  if (!cache_init_wrapper(distributedcache, cachesize, cacheserverspath))
+    strerr_die2x(111,FATAL,"cache wrapper initialization failed");
 
   if (env_get("HIDETTL"))
     response_hidettl();
