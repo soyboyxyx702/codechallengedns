@@ -62,18 +62,15 @@ see when I query for `myip.opendns.com`:
 
 Implement this behavior in dnscache.
 
-Implementation
---------------
+IMPLEMENTATION
 The approach was to figure out where are we getting the list of DNS servers from.
 By specifying the DNS server that performs the custom behavior of returning public UP
 for myip.opendns.com, as a configuration setting/ environment variable, we return the
 custom DNS server instead of specified DNS servers list at root/@ for myip.opendns.com
 
-Configuration
--------------
+CONFIGURATION
 The following entries in run-dnscache.sh
 export CUSTOMDOMAIN=myip.opendns.com
-# domain length when encoded 4myip7opendns3com + null char
 export CUSTOMDNSDOMAINLEN=18
 export CUSTOMDNS=208.67.222.222
 
@@ -87,8 +84,7 @@ the overhead of which can limit the throughput of a busy server.
 Modify dnscache to perform IP address-based access control without
 using system calls for each DNS request.
 
-Implementation
----------------
+IMPLEMENTATION
 Ideally the access control list will be specified in a database and cached by DNS.
 However in order to avoid performing a stat system call on every request, & still be
 able to keep track of access control list, we do so by creating a separate dedicated thread,
@@ -99,8 +95,7 @@ will have a list of authorized IPs.
 
 accesscontrol.c monitors this file for updates in a separate thread.
 
-Configuration
--------------
+CONFIGURATION
 The following entries in run-dnscache.sh
 ACCESS_CONTROL_FILE_PATH="ip/accesscontrol.global"
 [ -f root/ip/accesscontrol.global  ] || cp accesscontrol.global root/ip/.
@@ -112,8 +107,7 @@ ACCESS_CONTROL_FILE_PATH="ip/accesscontrol.global"
 
 Modify cache.c to add a method to delete an entry from the cache.
 
-Implementation
----------------
+IMPLEMENTATION
 cache_find is a helper method, which will keep looking for a key in the byte array, called by cache_get & cache_delete.
 If an expired copy of the key is found, instead of following the previous behavior and return key to not be found,
 we invalidate the key record, by setting the key field to all 0s. The assumption here being, the real set of keys
@@ -152,8 +146,7 @@ look forward to seeing the most. If you are short on time we would
 still like to see your thoughts on how you will approach this problem. :-)
 
 
-Implementation
----------------
+IMPLEMENTATION
 I have borrowed from consistent hashing to map cache keys to cache server.
 circularserverhash.c monitors cache server list specifying list of cache servers for updates
 and maps servers to a deterministic hash position, regardless of the number of servers.
@@ -169,8 +162,7 @@ within the circular hash space.
 
 cacheclient.c/cacheserver.c are TCP client/servers. This could have been done in UDP too.
 
-Configuration
--------------
+CONFIGURATION
 The following entry in run-dnscache.sh specifies the list of cache servers
 and whether we are running a distributed cache service or the default one.
 CACHE_SERVERS_LIST_FILE_PATH="cacheservers.list"
@@ -178,19 +170,19 @@ export DISTRIBUTEDCACHE=1
 export DISTRIBUTEDCACHESERVERSFILE=$CACHE_SERVERS_LIST_FILE_PATH
 
 
-Testing
--------
-- Make Distributed cache has been enabled in run-dnscache.sh
+TESTING
+Make Distributed cache has been enabled in run-dnscache.sh
 
-- Start all cache servers specified in root/cacheservers.list
-	$ ./cacheserver 127.0.0.1 6001
-	$ ./cacheserver 127.0.0.1 6002
-	$ ./cacheserver 127.0.0.1 6003
-	$ ./cacheserver 127.0.0.1 6004
+Start all cache servers specified in root/cacheservers.list
 
-- Start the dnscache 
-	$ sudo ./run-dnscache.sh
+    $ ./cacheserver 127.0.0.1 6001
+    $ ./cacheserver 127.0.0.1 6002
+    $ ./cacheserver 127.0.0.1 6003
+    $ ./cacheserver 127.0.0.1 6004
 
-- Test out with DNS requests
-	$ dig @127.0.0.1 www.facebook.com
-	$ dig @127.0.0.1 www.google.com
+Start the dnscache 
+    $ sudo ./run-dnscache.sh
+
+Test out with DNS requests
+    $ dig @127.0.0.1 www.facebook.com
+    $ dig @127.0.0.1 www.google.com
