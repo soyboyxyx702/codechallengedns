@@ -67,11 +67,12 @@ Implementation:
 The approach was to figure out where are we getting the list of DNS servers from.
 By specifying the DNS server that performs the custom behavior of returning public UP
 for myip.opendns.com, as a configuration setting/ environment variable, we return the
-custom DNS server instead of specified DNS servers list at root/@ for myip.opendns.com
+custom DNS server instead of specified DNS servers list at `root/@` for `myip.opendns.com`
 
 Configuration:
 
 The following entries in run-dnscache.sh :
+
     $ export CUSTOMDOMAIN=myip.opendns.com
     $ export CUSTOMDNSDOMAINLEN=18
     $ export CUSTOMDNS=208.67.222.222
@@ -93,14 +94,15 @@ However in order to avoid performing a stat system call on every request, & stil
 able to keep track of access control list, we do so by creating a separate dedicated thread,
 whose job is to simply perform a stat call on regular intervals and if access control list has
 been modified, then take the appropriate action.
-Also I have done away with file name approach for access control, instead a new file 'accesscontrol.global'
+Also I have done away with file name approach for access control, instead a new file `accesscontrol.global`
 will have a list of authorized IPs.
 
-accesscontrol.c monitors this file for updates in a separate thread.
+`accesscontrol.c` monitors this file for updates in a separate thread.
 
 Configuration:
 
 The following entries in run-dnscache.sh :
+
     $ ACCESS_CONTROL_FILE_PATH="ip/accesscontrol.global"
     $ [ -f root/ip/accesscontrol.global  ] || cp accesscontrol.global root/ip/.
 
@@ -113,7 +115,7 @@ Modify cache.c to add a method to delete an entry from the cache.
 
 Implementation:
 
-cache_find is a helper method, which will keep looking for a key in the byte array, called by cache_get & cache_delete.
+`cache_find` is a helper method, which will keep looking for a key in the byte array, called by `cache_get` & `cache_delete`.
 If an expired copy of the key is found, instead of following the previous behavior and return key to not be found,
 we invalidate the key record, by setting the key field to all 0s. The assumption here being, the real set of keys
 will not be taking a value of all 0s. And we keep looking in the byte array if there are other versions of the key.
@@ -129,14 +131,18 @@ that will be a O(n) time/space operation.).
 
 Testing:
 
-Modified cachetest to test for cache_delete.
-Try out :
-    $ ./cachetest www.google.com:172.217.3.164 www.google.com www.google.com:delete www.google.com
-
-key name:delete = indicates key has to be deleted
+Modified `cachetest` to test `cache_delete`.
+`key name:delete` indicates key has to be deleted
 NOTE: Have not implemented delete key for Distributed Cache (section 4), make sure you disable
-distributed caching in run-dnscache.sh
-export DISTRIBUTEDCACHE=0  # set this to 0
+distributed caching in run-dnscache.sh :
+
+    $ export DISTRIBUTEDCACHE=0  # set this to 0
+
+
+Try out :
+
+    $ ./cachetest www.google.com:172.217.3.164 www.google.com www.google.com:delete www.google.com
+    $ ./cachetest www.google.com:172.217.3.164 www.google.com www.google.com:delete www.google.com
 
 4. New Features
 ----------------
@@ -167,7 +173,7 @@ there will be separate health periodic checks to take faulty cache servers out o
 Also, an enhancement to circular hashing could also be mapping a given server to multiple virtual positions
 within the circular hash space.
 
-cacheclient.c/cacheserver.c are TCP client/servers. This could have been done in UDP too.
+`cacheclient.c/cacheserver.c` are TCP client/servers. This could have been done in UDP too.
 
 
 Configuration:
@@ -183,7 +189,7 @@ Testing:
 
 Make Distributed cache has been enabled in run-dnscache.sh
 
-Start all cache servers specified in root/cacheservers.list
+Start all cache servers specified in `root/cacheservers.list`
 
     $ ./cacheserver 127.0.0.1 6001
     $ ./cacheserver 127.0.0.1 6002
