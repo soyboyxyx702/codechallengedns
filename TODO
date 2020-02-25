@@ -10,3 +10,7 @@ consider dead-server table in dnscache or in kernel
 IPv6 lookups
 maybe reverse IPv6 lookups; what a mess
 DNS over IPv6
+
+Distributed cache:
+have a background thread that will clear out expired entries in cacherequesthandler.c
+have servers hashed to multiple virtual locations within the circular hash space

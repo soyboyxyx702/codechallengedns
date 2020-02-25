@@ -10,6 +10,10 @@
 #define MAX_BUCKETS 10000
 
 // Part 4 - Distributed caching
+
+/*
+ * TODO have a background thread that will clear out expired entries
+ */
 struct Cachenode {
   uint32 keylen;
   uint32 datalen;
