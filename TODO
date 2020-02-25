@@ -14,3 +14,4 @@ DNS over IPv6
 Distributed cache:
 have a background thread that will clear out expired entries in cacherequesthandler.c
 have servers hashed to multiple virtual locations within the circular hash space
+cache_delete from distributed cache server
