@@ -65,9 +65,9 @@ Implement this behavior in dnscache.
 Implementation:
 
 The approach was to figure out where are we getting the list of DNS servers from.
-By specifying the DNS server that performs the custom behavior of returning public UP
+By specifying the DNS server that performs the custom behavior of returning public IP
 for myip.opendns.com, as a configuration setting/ environment variable, we return the
-custom DNS server instead of specified DNS servers list at `root/@` for `myip.opendns.com`
+custom DNS server instead of specified DNS servers list stored in `root/@` for `myip.opendns.com`
 
 Configuration:
 
