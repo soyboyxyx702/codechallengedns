@@ -14,6 +14,12 @@
 /*
  * TODO have a background thread that will clear out expired entries
  */
+/*
+ * We are using a linked list to chain nodes when they collide
+ * Could use a Binary search tree instead
+ * Trade off will be slower insertion O(log n) and faster look up O(log n)
+ * as opposed to faster insertion O(1) and slower look up O(n)
+ */
 struct Cachenode {
   uint32 keylen;
   uint32 datalen;
@@ -220,7 +226,7 @@ static void cachesetentry(const char* buffer, const int reqlen, const uint32 key
   * Forward the request to the appropriate handler depending on request type (GET/SET)
   */
 void cacherequesthandler(char* buffer, int reqlen, char** response, int* responselen) {
-  if(!buffer || reqlen < 5) {
+  if(!initialized || !buffer || reqlen < 5) {
     return;
   }
 

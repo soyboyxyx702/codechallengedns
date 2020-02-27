@@ -78,6 +78,7 @@ static unsigned int hash(const char *key,unsigned int keylen)
   return result;
 }
 
+// Part 3 - cache_delete, refactored to find key for cache_get & cache_delete
 static uint32 cache_find(const char *key,unsigned int keylen) {
   struct tai expire;
   struct tai now;

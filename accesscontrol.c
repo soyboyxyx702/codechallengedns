@@ -15,8 +15,14 @@
 
 #define MAX_BUCKETS 10000
 
-// Part 4 - okclient avoid stat system call on every request
+// Part 2 - okclient avoid stat system call on every request
 
+/*
+ * We are using a linked list to chain nodes when they collide
+ * Could use a Binary search tree instead
+ * Trade off will be slower insertion O(log n) and faster look up O(log n)
+ * as opposed to faster insertion O(1) and slower look up O(n)
+ */
 struct IPnode {
   char *ip;
   struct IPnode* next;
