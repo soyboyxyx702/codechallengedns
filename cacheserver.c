@@ -20,7 +20,7 @@
 #define ERROR "cacheserver: error: "
 #define SOMAXLISTENQUEUE 20
 
-int keepRunning = 1;
+volatile sig_atomic_t keepRunning = 1;
 
 // Part 4 - Distributed caching
 
