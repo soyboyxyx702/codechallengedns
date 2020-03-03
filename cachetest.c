@@ -14,7 +14,6 @@ int main(int argc,char **argv)
   unsigned int u;
   uint32 ttl;
 
-  // if (!cache_init(0, 200, 0)) _exit(111);
   if (!cache_init_wrapper(1, 0, "cacheservers.list")) _exit(111);
 
   if (*argv) ++argv;
